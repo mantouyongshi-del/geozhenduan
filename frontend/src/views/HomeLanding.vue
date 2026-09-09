@@ -41,7 +41,7 @@
                       <span class="item-title">GEO-RADAR 决策透视中枢</span>
                       <span class="item-badge blue">v2.6 实时</span>
                     </div>
-                    <p class="item-desc">5 大基座大模型 24/7 探针直连，实时穿透高频采购推荐顺位与信源采信。</p>
+                    <p class="item-desc">6 大主流基座大模型 24/7 探针直连，实时穿透高频采购推荐顺位与信源采信。</p>
                   </div>
                 </div>
 
@@ -76,7 +76,7 @@
                 </div>
 
                 <div class="dropdown-footer">
-                  <span>直连中国 5 大主流基座大模型 · 覆盖国家级权威信源</span>
+                  <span>直连中国 6 大主流基座大模型 · 覆盖国家级权威信源</span>
                   <a href="javascript:void(0)" @click.stop="openLeadModal('nav_platform')">预约现场实测 ➔</a>
                 </div>
               </div>
@@ -419,7 +419,7 @@
               <div class="probe-live-indicator">
                 <span class="pulse-ring"></span>
                 <span class="pulse-core"></span>
-                <span>5 大基座大模型 24/7 探针直连中</span>
+                <span>6 大主流基座大模型 24/7 探针直连中</span>
               </div>
               <div class="active-sample-tag">
                 <span class="sample-label">实时透视标杆：</span>
@@ -430,7 +430,7 @@
 
           <!-- 看板三栏式主体架构 -->
           <div class="console-body-grid">
-            <!-- 第 1 栏：5 大基座大模型实时直连探针 -->
+            <!-- 第 1 栏：6 大基座大模型实时直连探针 -->
             <div class="console-col col-probes">
               <div class="col-head">
                 <div class="col-head-title">
@@ -1059,7 +1059,7 @@
           准备好在 AI 搜索时代，彻底终结客源被同行截流的局面了吗？
         </h2>
         <p class="cta-sub">
-          无需部署任何插件 · 现场直连 5 大主流基座大模型 · 专属顾问 1 对 1 实测演示
+          无需部署任何插件 · 现场直连 6 大主流基座大模型 · 专属顾问 1 对 1 实测演示
         </p>
 
         <div class="cta-action-box">
@@ -2146,7 +2146,7 @@ const roadmapPhases = [
     step: 'PHASE 01',
     days: '第 1 ~ 5 天',
     title: '全网 AI 可见度与截流深度黑盒体检',
-    summary: '调用五大主流大模型接口，基于 100+ 核心业务 Prompt 进行全维度盲测，生成详尽的《企业 AI 推荐现状与客源流失测算书》。',
+    summary: '调用六大主流大模型接口，基于 100+ 核心业务 Prompt 进行全维度盲测，生成详尽的《企业 AI 推荐现状与客源流失测算书》。',
     deliverable: '《企业 AI 全域健康度体检书》与竞品截流拓扑图'
   },
   {
@@ -2186,7 +2186,7 @@ const faqs = [
   },
   {
     question: '企业做一次 AI 体检需要多长时间？需要我们提供什么？',
-    answer: '直连实测仅需 10~15 秒！提交申请后，我们的资深顾问将使用专用工作台现场直连五大基座大模型接口进行实时探针扫描，出具穿透级的《企业 AI 可见度体检书》，包含客源流失测算、竞品截流深度及改善建议，并为您进行 1 对 1 深度演示。'
+    answer: '直连实测仅需 10~15 秒！提交申请后，我们的资深顾问将使用专用工作台现场直连六大基座大模型接口进行实时探针扫描，出具穿透级的《企业 AI 可见度体检书》，包含客源流失测算、竞品截流深度及改善建议，并为您进行 1 对 1 深度演示。'
   },
   {
     question: 'GEO 优化会触犯大模型平台的规则或属于违规作弊吗？',

@@ -8,6 +8,14 @@
   </head>
   <body>
     <div id="console-app"></div>
+    <script>
+      (function() {
+        var p = window.location.pathname;
+        if (p && !p.includes('console')) {
+          window.location.replace('/console.html' + (window.location.hash || '#/'));
+        }
+      })();
+    </script>
     <script type="module" src="/src/console-main.js"></script>
   </body>
 </html>

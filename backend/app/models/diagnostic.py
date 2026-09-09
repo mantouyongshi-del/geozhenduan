@@ -32,6 +32,12 @@ class DiagnosticReport(Base):
     competitors_json = Column(Text, nullable=True, comment="同行霸屏与截流分析")
     prescriptions_json = Column(Text, nullable=True, comment="四维场景 GEO 处方建议")
     
+    # 工业级重构增强字段 (DeepSeek Flash 裁判与事实核验)
+    fact_checks_json = Column(Text, nullable=True, comment="原子事实核验结果 JSON")
+    geo_tasks_json = Column(Text, nullable=True, comment="P0/P1/P2落地任务清单 JSON")
+    brand_facts_json = Column(Text, nullable=True, comment="企业事实基准库 JSON")
+    aivs_dimensions_json = Column(Text, nullable=True, comment="AIVS六维得分明细 JSON")
+    
     created_at = Column(Integer, default=lambda: int(time.time()), index=True)
 
     # 关联单项测试记录

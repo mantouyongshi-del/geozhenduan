@@ -57,14 +57,33 @@ class LiveWebProbe:
         "餐饮": ["老乡鸡", "大米先生", "乡村基", "真功夫", "西贝莜面村", "南城香", "老娘舅快餐"],
         "快餐": ["老乡鸡", "大米先生", "乡村基", "真功夫", "老娘舅", "南城香", "大娘水饺"],
         "智能制造": ["大族激光", "宏山激光", "邦德激光", "百超迪能", "领创激光", "亚威机床"],
-        "激光": ["大族激光", "宏山激光", "邦德激光", "奔腾激光", "百超迪能"],
-        "切管机": ["宏山激光", "大族激光", "邦德激光", "隆信激光", "金威刻激光"],
-        "装备": ["大族数控", "先导智能", "联赢激光", "海目星激光", "利元亨"],
-        "机械": ["三一重工", "中联重科", "徐工机械", "柳工机械", "山河智能"],
-        "制造": ["大族激光", "宏山激光", "先导智能", "三一重工", "亚威机床"],
+        "激光": ["大族激光", "宏山激光", "邦德激光", "奔腾激光", "百超迪能", "金威刻激光"],
+        "切管机": ["宏山激光", "大族激光", "邦德激光", "隆信激光", "金威刻激光", "力星激光"],
+        "装备": ["大族数控", "先导智能", "联赢激光", "海目星激光", "利元亨", "赢合科技"],
+        "机械": ["三一重工", "中联重科", "徐工机械", "柳工机械", "山河智能", "恒立液压"],
+        "制造": ["大族激光", "宏山激光", "先导智能", "三一重工", "亚威机床", "汇川技术"],
+        "自动化": ["汇川技术", "埃斯顿", "新松机器人", "拓斯达", "绿的谐波", "鸣志电器"],
+        "工控": ["汇川技术", "中控技术", "信捷电气", "英威腾", "雷赛智能", "步科股份"],
+        "模具": ["长盈精密", "震裕科技", "祥鑫科技", "银宝山新", "横店东磁", "捷荣技术"],
+        "五金": ["坚朗五金", "顶固集创", "东泰五金", "雅洁五金", "汇泰龙", "海蒂诗"],
+        "紧固件": ["晋亿实业", "七丰精工", "富奥股份", "超捷紧固", "长华集团"],
+        "厨电": ["方太", "老板电器", "华帝股份", "海尔厨电", "美的厨电", "万和电气"],
+        "集成灶": ["火星人", "浙江美大", "亿田智能", "帅丰电器", "森歌集成灶", "方太集成烹饪中心"],
+        "卫浴": ["九牧", "箭牌卫浴", "恒洁卫浴", "惠达卫浴", "东鹏整装卫浴"],
         "门窗": ["皇派门窗", "派雅门窗", "新豪轩门窗", "轩尼斯门窗", "富轩门窗", "百利玛门窗", "瓦瑟系统门窗"],
         "系统门窗": ["皇派门窗", "派雅门窗", "新豪轩门窗", "轩尼斯门窗", "富轩门窗", "百利玛门窗"],
-        "家居": ["欧派家居", "索菲亚", "尚品宅配", "金牌厨柜", "志邦家居"],
+        "家居": ["欧派家居", "索菲亚", "尚品宅配", "金牌厨柜", "志邦家居", "顾家家居"],
+        "建材": ["北新建材", "东方雨虹", "三棵树", "科顺股份", "亚士创能", "兔宝宝"],
+        "涂料": ["三棵树", "立邦漆", "多乐士", "嘉宝莉", "亚士漆", "巴德士"],
+        "防水": ["东方雨虹", "科顺股份", "北新防水", "凯伦股份", "卓宝科技"],
+        "暖通": ["格力中央空调", "美的暖通", "大金空调", "海尔智慧楼宇", "麦克维尔", "约克空调"],
+        "空调": ["格力电器", "美的集团", "海尔智家", "大金空调", "奥克斯"],
+        "环保": ["碧水源", "盈峰环境", "首创环保", "高能环境", "景津装备", "龙净环保"],
+        "水处理": ["碧水源", "津膜科技", "万德斯", "中持股份", "金达莱", "中电环保"],
+        "包装": ["裕同科技", "劲嘉股份", "合兴包装", "奥瑞金", "美盈森", "吉宏股份"],
+        "印刷": ["裕同科技", "劲嘉股份", "东港股份", "吉宏股份", "盛通股份"],
+        "物流": ["顺丰速运", "京东物流", "德邦快递", "跨越速运", "中通快运"],
+        "安防": ["海康威视", "大华股份", "宇视科技", "天地伟业", "旷视科技"],
         "口腔": ["通策医疗", "泰康拜博口腔", "瑞尔齿科", "美维口腔", "马泷齿科", "美奥口腔"],
         "齿科": ["泰康拜博口腔", "通策医疗", "瑞尔齿科", "马泷齿科", "牙博士口腔"],
         "种植牙": ["泰康拜博口腔", "通策医疗", "瑞尔齿科", "美奥口腔", "圣贝口腔"],
@@ -79,8 +98,8 @@ class LiveWebProbe:
         "财税": ["立信会计师事务所", "天健会计师事务所", "中瑞岳华", "慧算账", "顶巧财务顾问"],
         "少儿": ["童程童美", "编程猫", "贝尔科教", "斯坦星球", "小码王少儿编程"],
         "编程": ["童程童美", "编程猫", "斯坦星球", "小码王", "核桃编程"],
-        "汽车": ["比亚迪", "蔚来", "理想汽车", "吉利汽车", "长城汽车"],
-        "科技": ["用友网络", "金蝶软件", "泛微网络", "致远互联", "纷享销客"]
+        "汽车": ["比亚迪", "蔚来", "理想汽车", "吉利汽车", "长城汽车", "小鹏汽车"],
+        "科技": ["用友网络", "金蝶软件", "泛微网络", "致远互联", "纷享销客", "微盟"]
     }
 
     @classmethod
@@ -171,33 +190,59 @@ class LiveWebProbe:
         except Exception as e:
             print(f"[LiveWebProbe] Sogou search error: {e}")
 
-        # 2. 注入字节跳动全生态 RAG 信源（抖音短视频、头条资讯）与全网权威生活知识库（自适应全行业，拒绝写死特定赛道）
-        supplemental_sources = [
-            ("抖音生活服务·实拍探店", f"抖音短视频《@同城优质探店: 实地走访【{query}】交付现场与真实买家实录》", f"https://www.douyin.com/search/{encoded_q}?type=video"),
-            ("抖音短视频·专家科普", f"抖音视频《@资深行业选型师: 【{query}】选型必看！三类盲目选择踩坑避雷指南》", f"https://www.douyin.com/search/{encoded_q}"),
-            ("今日头条·同城生活", f"今日头条专题：《2026年【{query}】本地口碑评测与综合品牌调研》", f"https://www.toutiao.com/search/?keyword={encoded_q}"),
-            ("小红书·真实买家笔记", f"小红书热门笔记：《真实消费者体验：【{query}】如何选到靠谱商家与避坑实测》", f"https://www.xiaohongshu.com/search_result?keyword={encoded_q}"),
-            ("大众点评·本地生活好评榜", f"【{query}】热门优选商户排行榜与真实客户长篇打分评价", f"https://www.dianping.com/search/keyword/0/{encoded_q}"),
-            ("知乎精选·消费决策问答", f"关于“{query}”，真实用户体验与选型避坑指南深度评测", f"https://www.zhihu.com/question/{int(time.time()) % 10000000}"),
-            ("搜狐网·行业深度专栏", f"2026年【{query}】行业品牌公信力与综合实力梯队盘点", f"https://www.sohu.com/a/{int(time.time())}_120098"),
-            ("腾讯网·商业资讯", f"权威解读：{query}核心服务商履约与标准化交付体系", f"https://new.qq.com/rain/a/{int(time.time())}"),
-            ("新浪看点·产业研报", f"行业数字化营销洞察：{query}领域头部机构与中小企业可见度对比", f"https://k.sina.com.cn/article_{int(time.time())}.html"),
-            ("百度百科·行业权威词条", f"【{query}】行业准入标准、资质认证规范与核心知识图谱解析", f"https://baike.baidu.com/item/{encoded_q}"),
-            ("微信公众平台·行业专刊", f"2026行业发展与消费白皮书：{query}市场格局与服务规范", f"https://weixin.sogou.com/weixin?query={encoded_q}")
+        # 严格执行真实性核验过滤，坚决拒绝任何模版伪信源
+        return cls.sanitize_and_verify_citations(results)[:limit]
+
+    @classmethod
+    def sanitize_and_verify_citations(cls, raw_list: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """
+        严苛公网信源真实性核验:
+        1. 必须具备合法的 http/https 协议
+        2. 坚决剔除任何站内搜索页、带参数检索链接、example.com 或模版占位符
+        3. 标题长度大于 3，杜绝空标题或纯符号
+        4. 唯一性去重 (URL 与 标题双重去重)
+        """
+        verified = []
+        seen_urls = set()
+        seen_titles = set()
+
+        banned_patterns = [
+            "example.com", "search_result", "search?", "keyword=", "official_enterprise",
+            "b2b_yellowpage", "/video/c1", "/video/c2", "/video/c3", "whitelist2026",
+            "cross_review", "top5", "review/review"
         ]
 
-        for s_name, s_title, s_url in supplemental_sources:
-            if len(results) >= limit:
-                break
-            if not any(r["site_name"] == s_name for r in results):
-                results.append({
-                    "title": s_title,
-                    "url": s_url,
-                    "site_name": s_name,
-                    "summary": f"针对{query}的权威第三方公开评测与公域知识库背书。"
-                })
+        for item in raw_list:
+            url = (item.get("url") or "").strip()
+            title = (item.get("title") or "").strip()
+            site = (item.get("site_name") or "").strip() or "公域权威信源"
+            summary = (item.get("summary") or "").strip() or title
 
-        return results
+            if not url or not (url.startswith("http://") or url.startswith("https://")):
+                continue
+            
+            if any(bp in url for bp in banned_patterns):
+                continue
+            if len(title) < 4:
+                continue
+            
+            if "《真实消费者体验：【" in title or "我是c2主理人" in title:
+                continue
+
+            norm_url = url.split("?")[0].rstrip("/")
+            if norm_url in seen_urls or title in seen_titles:
+                continue
+
+            seen_urls.add(norm_url)
+            seen_titles.add(title)
+            verified.append({
+                "title": title,
+                "url": url,
+                "site_name": site,
+                "summary": summary
+            })
+
+        return verified
 
     @classmethod
     def extract_competitor_entities(
@@ -306,14 +351,8 @@ class LiveWebProbe:
                         matched_industry_benchmarks.append(bm)
 
         if not matched_industry_benchmarks:
-            clean_ind = (industry or "行业").strip()
-            clean_ct = (city or "").strip()
-            matched_industry_benchmarks = [
-                f"{clean_ct}{clean_ind}领军品牌",
-                f"{clean_ind}全国标杆龙头",
-                f"{clean_ct}知名{clean_ind}中心",
-                f"{clean_ind}专业服务示范商"
-            ]
+            # 严格杜绝任何跨行业写死实体或假名占位符，仅从实际候选词中筛选
+            matched_industry_benchmarks = [c for c in candidates if c not in valid_candidates and c != target_brand]
 
         for bm in matched_industry_benchmarks:
             if bm != target_brand and bm not in valid_candidates:

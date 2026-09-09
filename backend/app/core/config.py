@@ -24,7 +24,16 @@ class Settings:
     DASHSCOPE_API_KEY: str = os.getenv("DASHSCOPE_API_KEY", os.getenv("QWEN_API_KEY", ""))
     QWEN_API_KEY: str = os.getenv("QWEN_API_KEY", os.getenv("DASHSCOPE_API_KEY", ""))
     BAIDU_API_KEY: str = os.getenv("BAIDU_API_KEY", "")
-    HUNYUAN_API_KEY: str = os.getenv("HUNYUAN_API_KEY", "")
+    BAIDU_ACCESS_KEY_ID: str = os.getenv("BAIDU_ACCESS_KEY_ID", "")
+    BAIDU_ACCESS_KEY_SECRET: str = os.getenv("BAIDU_ACCESS_KEY_SECRET", "")
     MOONSHOT_API_KEY: str = os.getenv("MOONSHOT_API_KEY", "")
+    ALIYUN_ACCESS_KEY_ID: str = os.getenv("ALIYUN_ACCESS_KEY_ID", "")
+    ALIYUN_ACCESS_KEY_SECRET: str = os.getenv("ALIYUN_ACCESS_KEY_SECRET", "")
+    VOLC_ACCESS_KEY: str = os.getenv("VOLC_ACCESS_KEY", os.getenv("VOLCENGINE_ACCESS_KEY_ID", ""))
+    VOLC_SECRET_KEY: str = os.getenv("VOLC_SECRET_KEY", os.getenv("VOLCENGINE_ACCESS_KEY_SECRET", ""))
+    HUNYUAN_API_KEY: str = os.getenv("HUNYUAN_API_KEY", "")
+
+    # 高德开放平台 Web服务 REST API Key (用于 POI 智能联想补全、权威事实反填与防呆消歧)
+    AMAP_KEY: str = os.getenv("AMAP_KEY", "")
 
 settings = Settings()

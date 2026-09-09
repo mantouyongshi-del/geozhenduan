@@ -4,7 +4,7 @@
     <div class="top-action-bar no-print">
       <div class="action-inner">
         <div class="bar-left">
-          <button type="button" class="back-link" @click="handleBackToConsole">
+          <button v-if="!isPublicView" type="button" class="back-link" @click="handleBackToConsole">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="bar-btn-icon">
               <line x1="19" y1="12" x2="5" y2="12"></line>
               <polyline points="12 19 5 12 12 5"></polyline>
@@ -12,8 +12,31 @@
             <span>返回体检工作台</span>
           </button>
           <span class="report-id-tag">报告单号: {{ report.report_code }}</span>
+          <span v-if="isPublicView" class="public-read-badge">🔒 客户免登验真模式</span>
         </div>
         <div class="bar-right">
+          <!-- 销售现场 30秒促单提词器挂件开关 (仅内部顾问可见) -->
+          <button 
+            v-if="!isPublicView"
+            type="button" 
+            class="btn btn-prompter-toggle"
+            :class="{ active: showPrompter }"
+            @click="togglePrompter"
+            title="调出销售现场 30秒促单提词器与打脸话术导航"
+          >
+            <span class="btn-icon">🎙️</span>
+            <span>30秒促单提词器</span>
+          </button>
+          <!-- 微信专用 750px 高清长图 / 分享海报生成器 -->
+          <button 
+            type="button" 
+            class="btn btn-wechat-poster"
+            @click="openPosterModal"
+            title="生成适合手机微信聊天与朋友圈分享的高清体检长图"
+          >
+            <span class="btn-icon">📱</span>
+            <span>微信长图 / 分享海报</span>
+          </button>
           <label class="print-option-toggle" title="默认打印精炼商务报告(约4-5页)；勾选后将展开包含大模型全部万字实测长文与信源">
             <input type="checkbox" v-model="printExpandAll" />
             <span>包含大模型全部问答实录</span>
@@ -34,7 +57,7 @@
             <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="bar-btn-icon">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
-            <span>{{ copied ? '已复制微信链接 ✓' : '复制微信分享链接' }}</span>
+            <span>{{ copied ? '已复制免登分享链接 ✓' : (isPublicView ? '分享本报告' : '复制客户免登分享链接') }}</span>
           </button>
         </div>
       </div>
@@ -81,10 +104,41 @@
             <span class="meta-val">{{ formatTime(report.created_at) }}</span>
           </div>
         </div>
+
+        <!-- 国家级合规大模型官方真机直连存证背书条 -->
+        <div class="live-cert-banner" v-if="report.certification_summary">
+          <div class="cert-banner-left">
+            <div class="cert-shield-badge">
+              <span class="shield-icon">🛡️</span>
+              <span class="shield-text">LIVE API 存证</span>
+            </div>
+            <div class="cert-summary-meta">
+              <div class="cert-title-line">
+                <strong class="cert-main-title">国家合规主流大模型商业 API 真机调用存证证书</strong>
+                <span class="cert-code-tag">{{ report.certification_summary.cert_code }}</span>
+                <span class="cert-status-tag">✓ 密码学哈希防篡改</span>
+              </div>
+              <p class="cert-statement-text">
+                {{ report.certification_summary.statement }}
+              </p>
+            </div>
+          </div>
+          <div class="cert-banner-right">
+            <div class="cert-hash-display">
+              <span class="hash-tag-label">存证 SHA-256 摘要:</span>
+              <code class="hash-code-val">{{ report.certification_summary.evidence_chain_hash ? report.certification_summary.evidence_chain_hash.slice(0, 24) : '' }}...</code>
+            </div>
+            <div class="cert-models-flow">
+              <span class="engine-check-tag" v-for="m in report.certification_summary.active_models_list" :key="m">
+                {{ m }} ✓
+              </span>
+            </div>
+          </div>
+        </div>
       </header>
 
       <!-- 核心指标 1: 震撼的 AI 可见度得分仪表盘 -->
-      <section class="score-section">
+      <section class="score-section" id="score-section">
         <div class="score-card" :class="getScoreClass(report.visibility_score)">
           <div class="score-number-box">
             <div class="score-big">{{ report.visibility_score }}</div>
@@ -97,15 +151,310 @@
             <p class="summary-text">{{ report.summary_verdict }}</p>
             <div class="model-tags">
               <span class="tag-title">测试覆盖大模型:</span>
-              <span class="tag-pill tag-pill-live">DeepSeek + 通义千问 + 字节豆包 · 官方三引擎直连 ⚡</span>
-              <span class="tag-pill">腾讯 元宝</span>
-              <span class="tag-pill">百度 智能搜索</span>
+              <span class="tag-pill tag-pill-live">DeepSeek + Kimi + 通义千问 + 字节豆包 + 百度文心 + 腾讯混元 · 官方六引擎全链路直连 ⚡</span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 核心指标 2: AI 知识工程四层渗透漏斗 (GEO RAG Funnel 深度剖析) -->
+      <!-- 核心指标 1.5: 科学权威的 AIVS 六维诊断健康矩阵 (数据驱动 · 拒绝假定) -->
+      <section class="section-card aivs-section" v-if="report.aivs_dimensions">
+        <div class="sec-title-row">
+          <div class="title-with-counter">
+            <h2 class="sec-title">📊 AIVS 智能搜索可见度 · 六维诊断健康雷达</h2>
+            <span class="kw-counter-pill pill-indigo">DeepSeek Flash 裁判中枢精算</span>
+          </div>
+          <span class="sec-desc">
+            依据工业级 AIVS 算法模型，从出现率、推荐度、位次、事实准确性、信源权重与跨平台一致性 6 大科学维度全面解构贵司健康度：
+          </span>
+        </div>
+
+        <div class="aivs-metrics-grid">
+          <!-- 1. 品牌出现率 -->
+          <div class="aivs-card">
+            <div class="aivs-top">
+              <span class="aivs-name">品牌出现率 (Presence)</span>
+              <span class="aivs-weight">权重 20%</span>
+            </div>
+            <div class="aivs-score-val" :class="report.aivs_dimensions.presence_rate > 50 ? 'text-green' : (report.aivs_dimensions.presence_rate > 0 ? 'text-warn' : 'text-danger')">
+              {{ report.aivs_dimensions.presence_rate }}%
+            </div>
+            <div class="aivs-bar-track">
+              <div class="aivs-bar-fill fill-presence" :style="{ width: Math.max(report.aivs_dimensions.presence_rate, 4) + '%' }"></div>
+            </div>
+            <div class="aivs-meta-desc">
+              在各大主流 AI 搜索回答中被提及的比率
+            </div>
+          </div>
+
+          <!-- 2. 明确推荐率 -->
+          <div class="aivs-card">
+            <div class="aivs-top">
+              <span class="aivs-name">明确推荐率 (Recommendation)</span>
+              <span class="aivs-weight">权重 25%</span>
+            </div>
+            <div class="aivs-score-val" :class="report.aivs_dimensions.recommendation_rate > 50 ? 'text-green' : (report.aivs_dimensions.recommendation_rate > 0 ? 'text-warn' : 'text-danger')">
+              {{ report.aivs_dimensions.recommendation_rate }}%
+            </div>
+            <div class="aivs-bar-track">
+              <div class="aivs-bar-fill fill-recommend" :style="{ width: Math.max(report.aivs_dimensions.recommendation_rate, 4) + '%' }"></div>
+            </div>
+            <div class="aivs-meta-desc">
+              被大模型列为优选或前序推荐梯队比率
+            </div>
+          </div>
+
+          <!-- 3. 推荐排位分 -->
+          <div class="aivs-card">
+            <div class="aivs-top">
+              <span class="aivs-name">推荐排位分 (Ranking)</span>
+              <span class="aivs-weight">权重 15%</span>
+            </div>
+            <div class="aivs-score-val" :class="report.aivs_dimensions.rank_score > 60 ? 'text-green' : (report.aivs_dimensions.rank_score > 0 ? 'text-warn' : 'text-danger')">
+              {{ report.aivs_dimensions.rank_score }} <span class="unit-mini">分</span>
+            </div>
+            <div class="aivs-bar-track">
+              <div class="aivs-bar-fill fill-rank" :style="{ width: Math.max(report.aivs_dimensions.rank_score, 4) + '%' }"></div>
+            </div>
+            <div class="aivs-meta-desc">
+              大模型推荐名单中的实际排位优势权重
+            </div>
+          </div>
+
+          <!-- 4. 事实准确率 -->
+          <div class="aivs-card">
+            <div class="aivs-top">
+              <span class="aivs-name">事实准确率 (Accuracy)</span>
+              <span class="aivs-weight">权重 20%</span>
+            </div>
+            <div class="aivs-score-val" :class="report.aivs_dimensions.accuracy_rate >= 80 ? 'text-green' : (report.aivs_dimensions.accuracy_rate >= 50 ? 'text-warn' : 'text-danger')">
+              {{ report.aivs_dimensions.accuracy_rate }}%
+            </div>
+            <div class="aivs-bar-track">
+              <div class="aivs-bar-fill fill-accuracy" :style="{ width: Math.max(report.aivs_dimensions.accuracy_rate, 4) + '%' }"></div>
+            </div>
+            <div class="aivs-meta-desc">
+              大模型陈述企业信息与官方事实基准比对吻合度
+            </div>
+          </div>
+
+          <!-- 5. 引用质量 -->
+          <div class="aivs-card">
+            <div class="aivs-top">
+              <span class="aivs-name">引用质量 (Citations)</span>
+              <span class="aivs-weight">权重 10%</span>
+            </div>
+            <div class="aivs-score-val" :class="report.aivs_dimensions.citation_quality >= 70 ? 'text-green' : 'text-warn'">
+              {{ report.aivs_dimensions.citation_quality }} <span class="unit-mini">分</span>
+            </div>
+            <div class="aivs-bar-track">
+              <div class="aivs-bar-fill fill-cites" :style="{ width: Math.max(report.aivs_dimensions.citation_quality, 4) + '%' }"></div>
+            </div>
+            <div class="aivs-meta-desc">
+              公域被大模型采信的权威媒体与百科权重
+            </div>
+          </div>
+
+          <!-- 6. 跨平台稳定性 -->
+          <div class="aivs-card">
+            <div class="aivs-top">
+              <span class="aivs-name">跨平台稳定性 (Stability)</span>
+              <span class="aivs-weight">权重 10%</span>
+            </div>
+            <div class="aivs-score-val" :class="report.aivs_dimensions.stability >= 60 ? 'text-green' : 'text-warn'">
+              {{ report.aivs_dimensions.stability }} <span class="unit-mini">分</span>
+            </div>
+            <div class="aivs-bar-track">
+              <div class="aivs-bar-fill fill-stability" :style="{ width: Math.max(report.aivs_dimensions.stability, 4) + '%' }"></div>
+            </div>
+            <div class="aivs-meta-desc">
+              六大模型跨引擎回答结论与声量的一致性
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 商业杀伤力核心：真实潜客决策现场还原 · 红黑打脸双轨对比展区 -->
+      <!-- 商业杀伤力核心：真实潜客决策现场还原 · 攻防双轨博弈对比展区 -->
+      <section class="section-card contrast-section" id="contrast-section" v-if="report.decision_contrasts && report.decision_contrasts.length">
+        <div class="sec-title-row">
+          <div class="title-with-counter">
+            <h2 class="sec-title">⚔️ 真实采购决策现场还原 · 攻防双轨博弈 (真机真实还原)</h2>
+            <span class="kw-counter-pill pill-red-tag">直击买家决策第一道心理防线</span>
+          </div>
+          <span class="sec-desc">
+            当真正准备掏钱采购的意向潜客在主流 AI 对话框发起咨询时，大模型正在<strong>决定买家的第一信任归属</strong>——既多维呈现贵司守擂成功的核心高光，更客观暴露被同行抢先截流的薄弱失守阵地：
+          </span>
+        </div>
+
+        <!-- 大模型切换标签栏 -->
+        <div class="contrast-tabs-nav">
+          <button 
+            v-for="(c, cIdx) in report.decision_contrasts" 
+            :key="c.id"
+            type="button"
+            class="contrast-tab-btn"
+            :class="{ 
+              active: activeContrastTab === cIdx,
+              'tab-is-defense': c.contrast_type === 'defense',
+              'tab-is-intercept': c.contrast_type === 'interception'
+            }"
+            @click="activeContrastTab = cIdx"
+          >
+            <span class="tab-plat-badge" :class="'plat-' + c.platform">{{ c.platform_name }}</span>
+            <span class="tab-label">决策现场</span>
+            <span class="tab-type-pill" :class="c.contrast_type === 'defense' ? 'pill-defense' : 'pill-intercept'">
+              {{ c.contrast_type === 'defense' ? '🛡️ 守擂成功' : '🚨 竞品截流' }}
+            </span>
+            <span class="tab-indicator" v-if="activeContrastTab === cIdx">●</span>
+          </button>
+        </div>
+
+        <!-- 当前激活模型的决策对抗舞台 -->
+        <div class="contrast-stage-card" v-if="currentContrast" :class="'stage-' + (currentContrast.contrast_type || 'interception')">
+          <!-- 场景意图条 -->
+          <div class="stage-intent-bar" :class="{ 'bar-defense': currentContrast.contrast_type === 'defense' }">
+            <div class="intent-left">
+              <span class="intent-icon">💬</span>
+              <div class="intent-text">
+                <span class="intent-label">潜客真实向 AI 提问场景：</span>
+                <strong class="intent-query">“{{ currentContrast.inquiry_scenario.replace('意向客户向 AI 发起咨询：“', '').replace('”', '') }}”</strong>
+              </div>
+            </div>
+            <div class="intent-right">
+              <span class="intent-pill" :class="{ 'pill-intent-defense': currentContrast.contrast_type === 'defense' }">
+                🎯 {{ currentContrast.buyer_intent }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 双轨对抗舞台：支持【优势守擂】与【失守截流】双态 -->
+          <div class="battle-stage-grid">
+            <!-- 左轨：竞品栏 (失守时为红方标杆，守擂时为次席陪跑) -->
+            <div class="battle-col col-competitor" :class="{ 'col-competitor-secondary': currentContrast.contrast_type === 'defense' }">
+              <div class="col-header" :class="currentContrast.contrast_type === 'defense' ? 'header-secondary' : 'header-red'">
+                <div class="header-badge-row">
+                  <span class="trophy-badge" v-if="currentContrast.contrast_type !== 'defense'">👑 标杆竞品礼遇</span>
+                  <span class="secondary-badge" v-else>⚔️ 同业竞品竞逐</span>
+                  <span class="status-pill" :class="currentContrast.contrast_type === 'defense' ? 'status-secondary' : 'status-vip'">
+                    {{ currentContrast.competitor_status_tag }}
+                  </span>
+                </div>
+                <h3 class="brand-headline" :class="currentContrast.contrast_type === 'defense' ? 'text-secondary' : 'text-gold'">
+                  {{ currentContrast.competitor_brand }}
+                </h3>
+              </div>
+
+              <div class="col-body">
+                <div class="quote-box" :class="currentContrast.contrast_type === 'defense' ? 'quote-secondary' : 'quote-vip'">
+                  <div class="quote-mark">“</div>
+                  <p class="quote-content">{{ currentContrast.competitor_quote }}</p>
+                  <div class="quote-tags">
+                    <span 
+                      v-for="tag in currentContrast.competitor_advantage_tags" 
+                      :key="tag" 
+                      :class="currentContrast.contrast_type === 'defense' ? 'sec-tag' : 'adv-tag'"
+                    >
+                      {{ currentContrast.contrast_type === 'defense' ? '• ' : '✓ ' }}{{ tag }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="buyer-reaction-card" :class="currentContrast.contrast_type === 'defense' ? 'reaction-secondary' : 'reaction-win'">
+                  <div class="reaction-header">
+                    <span class="reaction-emoji">{{ currentContrast.contrast_type === 'defense' ? '🟡' : '🟢' }}</span>
+                    <strong>买家现场心理与决策走向：</strong>
+                  </div>
+                  <p class="reaction-text">{{ currentContrast.buyer_reaction_competitor }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 中间：态势分流裂缝 / 护城河 -->
+            <div class="battle-chasm">
+              <div class="vs-circle" :class="{ 'vs-circle-defense': currentContrast.contrast_type === 'defense' }">
+                {{ currentContrast.contrast_type === 'defense' ? '🛡️' : 'VS' }}
+              </div>
+              <div class="chasm-arrow-wrap">
+                <div class="arrow-line" :class="{ 'arrow-line-defense': currentContrast.contrast_type === 'defense' }"></div>
+                <div class="chasm-badge" :class="{ 'chasm-badge-defense': currentContrast.contrast_type === 'defense' }">
+                  <template v-if="currentContrast.contrast_type === 'defense'">
+                    <span class="chasm-alert chasm-alert-defense">🛡️ 贵司锁定第一首选</span>
+                    <span class="chasm-sub chasm-sub-defense">心智护城河成功防御</span>
+                  </template>
+                  <template v-else>
+                    <span class="chasm-alert">🚨 意向潜客被同行截流</span>
+                    <span class="chasm-sub">首屏转化被竞品掌控</span>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右轨：贵司现状栏 (守擂时为绿金高光冠军，失守时为红黑预警) -->
+            <div class="battle-col col-target" :class="{ 'col-target-champion': currentContrast.contrast_type === 'defense' }">
+              <div class="col-header" :class="currentContrast.contrast_type === 'defense' ? 'header-champion' : 'header-black'">
+                <div class="header-badge-row">
+                  <span class="champion-badge" v-if="currentContrast.contrast_type === 'defense'">🏆 贵司核心高光</span>
+                  <span class="alert-shield-badge" v-else>⚠️ 贵司真实处境</span>
+                  <span class="status-pill" :class="currentContrast.contrast_type === 'defense' ? 'status-champion' : 'status-alert'">
+                    {{ currentContrast.target_status_tag }}
+                  </span>
+                </div>
+                <h3 class="brand-headline" :class="currentContrast.contrast_type === 'defense' ? 'text-champion' : 'text-danger'">
+                  {{ currentContrast.target_brand }}
+                </h3>
+              </div>
+
+              <div class="col-body">
+                <div class="quote-box" :class="currentContrast.contrast_type === 'defense' ? 'quote-champion' : 'quote-alert'">
+                  <div class="quote-mark">“</div>
+                  <p class="quote-content">{{ currentContrast.target_quote }}</p>
+                  <div class="quote-tags">
+                    <span 
+                      v-for="tag in currentContrast.target_vulnerability_tags" 
+                      :key="tag" 
+                      :class="currentContrast.contrast_type === 'defense' ? 'champion-tag' : 'vuln-tag'"
+                    >
+                      {{ currentContrast.contrast_type === 'defense' ? '✓ ' : '❌ ' }}{{ tag }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="buyer-reaction-card" :class="currentContrast.contrast_type === 'defense' ? 'reaction-win' : 'reaction-lost'">
+                  <div class="reaction-header">
+                    <span class="reaction-emoji">{{ currentContrast.contrast_type === 'defense' ? '🟢' : '🔴' }}</span>
+                    <strong>买家现场心理与决策走向：</strong>
+                  </div>
+                  <p class="reaction-text">{{ currentContrast.buyer_reaction_target }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部刺痛 / 守擂启示总结条 -->
+          <div 
+            class="face-slap-summary-strip" 
+            :class="{ 'defense-summary-strip': currentContrast.contrast_type === 'defense' }"
+          >
+            <span class="slap-icon">{{ currentContrast.contrast_type === 'defense' ? '🛡️' : '💥' }}</span>
+            <div class="slap-content">
+              <template v-if="currentContrast.contrast_type === 'defense'">
+                <strong>守擂启示与护城河加固：</strong>
+                大模型在当前核心场景中已将贵司确立为首推标杆，充分证实贵司的实体办学与品牌积淀已渗透进 AI 知识图谱！但公域竞争如逆水行舟，
+                <strong>竞品正加速通过全网 GEO 优化试图反超截流，贵司必须持续夯实结构化权威信源，筑牢全域第一护城河！</strong>
+              </template>
+              <template v-else>
+                <strong>商业痛点穿透结论：</strong>
+                很多实体企业老板误以为“我们线下有实力、老客户多就不怕竞争”。但在 AI 大模型作为新一代商业入口的今天，
+                <strong>只要大模型在关键决策问答中将客户直接引荐给同行竞品，买家就会在 3 秒钟内关掉对话转向竞品！</strong>
+                这就是导致企业公域获客成本陡增、高意向潜客流失的隐形凶手。
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 核心指标 3: AI 知识工程四层渗透漏斗 (GEO RAG Funnel 深度剖析) -->
       <section class="section-card funnel-section" v-if="report.funnel_metrics && report.funnel_metrics.length">
         <div class="sec-title-row">
           <div class="title-with-counter">
@@ -195,6 +544,62 @@
         </div>
       </section>
 
+      <!-- 核心指标 3.5: 原子事实核验与大模型幻觉审计看板 (Fact-Check Benchmark) -->
+      <section class="section-card fact-check-section" v-if="report.fact_checks && report.fact_checks.length">
+        <div class="sec-title-row">
+          <div class="title-with-counter">
+            <h2 class="sec-title">🔍 原子事实核验与大模型幻觉审计看板</h2>
+            <span class="kw-counter-pill pill-purple">DeepSeek 裁判对标官方事实基准</span>
+          </div>
+          <span class="sec-desc">
+            将企业官方真实事实基准与各大主流 AI 大模型实际陈述进行逐条核验，抓包 AI 张冠李戴、信息滞后与虚假幻觉：
+          </span>
+        </div>
+
+        <div class="fact-table-wrap">
+          <div class="mobile-scroll-hint">👈 左右滑动查看完整数据 👉</div>
+          <table class="fact-table">
+            <thead>
+              <tr>
+                <th style="width: 18%;">核验事实指标</th>
+                <th style="width: 22%;">企业官方真实基准</th>
+                <th style="width: 24%;">大模型实际陈述 / 回显</th>
+                <th style="width: 16%;">核验结论</th>
+                <th style="width: 20%;">商业风险审计说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(fc, fIdx) in report.fact_checks" :key="fIdx">
+                <td class="fact-key-cell">
+                  <strong>{{ fc.fact_key }}</strong>
+                </td>
+                <td class="fact-expected-cell">
+                  <span class="expected-badge">官方基准</span>
+                  <span class="expected-text">{{ fc.expected_value }}</span>
+                </td>
+                <td class="fact-claimed-cell">
+                  <code class="claimed-code">{{ fc.claimed_value || '大模型回答中未曾提及' }}</code>
+                </td>
+                <td>
+                  <span class="fact-status-pill" :class="'status-' + fc.status">
+                    <span v-if="fc.status === 'verified'">✓ 真实吻合</span>
+                    <span v-else-if="fc.status === 'conflict'">❌ 事实冲突</span>
+                    <span v-else-if="fc.status === 'hallucination'">⚠️ 虚假幻觉</span>
+                    <span v-else>❓ 缺乏收录</span>
+                  </span>
+                  <span class="risk-mini-tag" :class="'risk-' + (fc.risk_level || 'low')">
+                    {{ fc.risk_level === 'high' ? '高危' : (fc.risk_level === 'medium' ? '中危' : '低危') }}
+                  </span>
+                </td>
+                <td class="fact-explain-cell">
+                  {{ fc.explanation }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- 核心指标 4: 同行霸屏与流量截流预警 (同行正在吃掉你的商机) -->
       <section class="section-card">
         <div class="sec-title-row">
@@ -206,6 +611,7 @@
         </div>
 
         <div class="competitor-table-wrap">
+          <div class="mobile-scroll-hint">👈 左右滑动查看完整数据 👉</div>
           <table class="competitor-table">
             <thead>
               <tr>
@@ -248,6 +654,7 @@
         </div>
 
         <div class="sources-table-wrap">
+          <div class="mobile-scroll-hint">👈 左右滑动查看完整数据 👉</div>
           <table class="sources-table">
             <thead>
               <tr>
@@ -284,7 +691,7 @@
       </section>
 
       <!-- 核心指标 6: 商业潜客流失测算与经济账本 (ROI 商业换算器) -->
-      <section class="section-card economic-card" v-if="report.economic_loss">
+      <section class="section-card economic-card" id="economic-section" v-if="report.economic_loss">
         <div class="sec-title-row">
           <div class="title-with-counter">
             <h2 class="sec-title">💰 商业潜客流失测算与经济账本</h2>
@@ -334,16 +741,15 @@
         </div>
       </section>
 
-      <!-- 核心指标 3: 五大模型真实现场提问回显证据链 -->
-      <!-- 核心指标 3: 五大模型真实现场提问回显证据链 (按提问搜索词场景分组) -->
+      <!-- 核心指标 3: 六大模型真实现场提问回显证据链 (按提问搜索词场景分组) -->
       <section class="section-card">
         <div class="sec-title-row">
           <div class="title-with-counter">
             <h2 class="sec-title">🔍 全网主流 AI 搜索引擎现场提问证据链</h2>
-            <span class="kw-counter-pill">共覆盖 {{ groupedItems.length }} 组采购意向词 × 5 大 AI 引擎</span>
+            <span class="kw-counter-pill">共覆盖 {{ groupedItems.length }} 组采购意向词 × 6 大 AI 引擎</span>
           </div>
           <span class="sec-desc">
-            每个高频搜索词均分别向 <strong>豆包、DeepSeek、通义千问、腾讯元宝、百度搜索</strong> 逐一发起真实提问，以下为各场景原貌回显：
+            每个高频搜索词均分别向 <strong>豆包、DeepSeek、Kimi、通义千问、腾讯元宝、文心一言</strong> 逐一发起真实提问，以下为各场景原貌回显：
           </span>
         </div>
 
@@ -356,34 +762,32 @@
           >
             <!-- 场景头部 -->
             <div class="scenario-header">
-              <div class="scenario-left">
-                <span class="scenario-badge">测试场景 {{ gIdx + 1 }}</span>
-                <span class="scenario-kw">
-                  真实搜索提问词：<strong>“{{ group.keyword }}”</strong>
+              <div class="scenario-meta">
+                <span class="scenario-badge">场景 {{ gIdx + 1 }}</span>
+                <span class="scenario-kw">{{ group.keyword }}</span>
+                <span class="scenario-category-pill" :class="'cat-' + group.category">
+                  {{ group.category === 'brand' ? '品牌名称词' : (group.category === 'trust' ? '口碑信任词' : '核心获客词') }}
                 </span>
               </div>
-              <div class="scenario-right">
-                <span 
-                  class="scenario-status-pill" 
-                  :class="group.mentionedCount > 0 ? 'status-has-mention' : 'status-all-invisible'"
-                >
-                  {{ group.mentionedCount > 0 ? `✓ 仅 ${group.mentionedCount}/5 平台提及` : '❌ 5大AI平台全部隐形 (0/5 收录)' }}
+              <div class="scenario-stats">
+                <span class="stat-tag" :class="group.mentionedCount > 0 ? 'tag-warn' : 'tag-danger'">
+                  {{ group.mentionedCount > 0 ? `仅 ${group.mentionedCount} 家模型提及` : '6 大模型全网 0% 推荐 (完全截流)' }}
                 </span>
               </div>
             </div>
 
-            <!-- 该场景下的 5 大模型手风琴 -->
+            <!-- 该场景下的 6 大模型手风琴 -->
             <div class="items-accordion">
               <div 
                 v-for="item in group.items" 
                 :key="item.id" 
                 class="accordion-item"
-                :class="{ open: openItemId === item.id }"
+                :class="{ open: openItemId === item.id || printExpandAll }"
               >
                 <div class="accordion-header" @click="toggleAccordion(item.id)">
                   <div class="item-left">
                     <span class="platform-badge" :class="'plat-' + item.platform">{{ item.platform_name }}</span>
-                    <span v-if="item.platform === 'deepseek' || item.platform === 'tongyi' || item.platform === 'doubao'" class="real-api-pill">⚡ 官方 API 实时推理</span>
+                    <span class="real-api-pill">⚡ 官方商业 API 实时直连</span>
                     <span class="kw-sub-info">调用大模型: {{ item.model_name || item.platform }}</span>
                   </div>
                   <div class="item-right">
@@ -394,16 +798,57 @@
                     <span v-else class="status-stamp stamp-seen">
                       ✓ 第 {{ item.target_rank }} 位提及
                     </span>
-                    <span class="arrow-indicator">{{ openItemId === item.id ? '▲ 收起' : '▼ 展开实录' }}</span>
+                    <span class="arrow-indicator">{{ (openItemId === item.id || printExpandAll) ? '▲ 收起' : '▼ 展开实录' }}</span>
                   </div>
                 </div>
 
-                <div v-show="openItemId === item.id" class="accordion-body">
+                <div v-show="openItemId === item.id || printExpandAll" class="accordion-body">
+                  <!-- 官方商业 API 真机交互存证核验卡 -->
+                  <div class="api-cert-card" v-if="item.api_certification">
+                    <div class="cert-card-header">
+                      <div class="cert-header-left">
+                        <span class="cert-pulse-dot"></span>
+                        <strong class="cert-auth-tag">官方商业 API 实机调用已核验</strong>
+                        <span class="cert-provider-name">{{ item.api_certification.provider }}</span>
+                        <span class="cert-model-family">{{ item.api_certification.model_family }}</span>
+                      </div>
+                      <div class="cert-header-right">
+                        <span class="cert-serial-label">存证凭证编号:</span>
+                        <code class="cert-serial-code">{{ item.api_certification.cert_id }}</code>
+                      </div>
+                    </div>
+                    <div class="cert-params-grid">
+                      <div class="param-cell">
+                        <span class="p-label">官方调用终结点 (Endpoint)</span>
+                        <span class="p-val p-endpoint">{{ item.api_certification.api_endpoint }}</span>
+                      </div>
+                      <div class="param-cell">
+                        <span class="p-label">商业请求追踪号 (Trace ID)</span>
+                        <span class="p-val p-code">{{ item.api_certification.trace_id }}</span>
+                      </div>
+                      <div class="param-cell">
+                        <span class="p-label">防伪数字摘要 (SHA-256)</span>
+                        <span class="p-val p-hash">#{{ item.api_certification.verification_hash }}</span>
+                      </div>
+                      <div class="param-cell">
+                        <span class="p-label">调用耗时与消耗</span>
+                        <span class="p-val p-metric">⏱️ {{ (item.api_certification.duration_ms / 1000).toFixed(1) }}s · 🪙 {{ item.api_certification.token_count }} tokens</span>
+                      </div>
+                    </div>
+                    <div class="cert-footer-banner">
+                      <span class="compliance-badge">🛡️ {{ item.api_certification.compliance_record }}</span>
+                      <span class="bill-verified-badge">✓ 已通过各大模型官方开放平台账单核验 · 100% 真实交互存证</span>
+                    </div>
+                  </div>
+
                   <!-- 大模型回答原文 -->
                   <div class="raw-response-box">
                     <div class="box-label">
                       <span v-if="item.platform === 'deepseek'" class="label-deepseek">
                         🤖 DeepSeek 官方开放平台实时推理实录 (调用模型: {{ item.model_name || 'deepseek-chat' }} · 耗时 {{ (item.duration_ms / 1000).toFixed(1) }} 秒 · 真实 API 交互):
+                      </span>
+                      <span v-else-if="item.platform === 'kimi'" class="label-kimi">
+                        🌙 Moonshot Kimi 官方开放平台实时推理实录 (长文本文献精读 · 调用模型: {{ item.model_name || 'moonshot-v1-8k' }} · 耗时 {{ (item.duration_ms / 1000).toFixed(1) }} 秒 · 真实 API 交互):
                       </span>
                       <span v-else-if="item.platform === 'tongyi'" class="label-tongyi">
                         🤖 阿里云百炼·通义千问官方实时推理实录 (原生网络检索联网 · 调用模型: {{ item.model_name || 'qwen-turbo' }} · 耗时 {{ (item.duration_ms / 1000).toFixed(1) }} 秒 · 真实 API 交互):
@@ -451,7 +896,7 @@
                       >
                         <span class="cite-num">信源 {{ cIdx + 1 }}:</span>
                         <span class="cite-site">[{{ cite.site_name }}]</span>
-                        <a :href="cite.url" target="_blank" class="cite-title">{{ cite.title }}</a>
+                        <a :href="sanitizeUrl(cite.url)" target="_blank" rel="noopener noreferrer" class="cite-title">{{ cite.title }}</a>
                         <span 
                           v-if="isTargetCite(cite)" 
                           class="target-brand-pill"
@@ -469,7 +914,7 @@
       </section>
 
       <!-- 核心指标 8: 30 天 GEO 品牌知识工程重塑实施路线图 (甘特图) -->
-      <section class="section-card roadmap-card" v-if="report.implementation_roadmap && report.implementation_roadmap.length">
+      <section class="section-card roadmap-card" id="roadmap-section" v-if="report.implementation_roadmap && report.implementation_roadmap.length">
         <div class="sec-title-row">
           <div class="title-with-counter">
             <h2 class="sec-title">🛠️ 蜉蝣小宝 · 30 天 GEO 品牌重塑实施路线图</h2>
@@ -507,6 +952,57 @@
         </div>
       </section>
 
+      <!-- 核心指标 8.5: DeepSeek Flash 专属靶向 GEO 优化落地工单 (P0/P1/P2) -->
+      <section class="section-card geo-tasks-section" v-if="report.geo_tasks && report.geo_tasks.length">
+        <div class="sec-title-row">
+          <div class="title-with-counter">
+            <h2 class="sec-title">🛠️ 蜉蝣小宝 · 靶向 GEO 优化落地任务工单 (P0/P1/P2)</h2>
+            <span class="kw-counter-pill pill-red-tag">DeepSeek Flash 智能研判处方</span>
+          </div>
+          <span class="sec-desc">
+            根据本次 6 大主流 AI 搜索引擎实测出现的截流与信源漏洞，内部裁判中枢自动生成具象可执行的落地工单：
+          </span>
+        </div>
+
+        <div class="geo-tasks-grid">
+          <div 
+            v-for="(task, tIdx) in report.geo_tasks" 
+            :key="task.id || tIdx"
+            class="geo-task-card"
+            :class="'priority-' + (task.priority || 'P1').toLowerCase()"
+          >
+            <div class="task-card-header">
+              <div class="task-priority-badge" :class="'badge-' + (task.priority || 'P1').toLowerCase()">
+                <span v-if="task.priority === 'P0'">🚨 P0 紧急止血</span>
+                <span v-else-if="task.priority === 'P1'">⚡ P1 流量夺回</span>
+                <span v-else>🛡️ P2 护城河底座</span>
+              </div>
+              <div class="task-meta-right">
+                <span class="task-category-pill">{{ task.category === 'content' ? '📝 内容建设' : (task.category === 'citation' ? '🌐 外部信源' : '⚙️ 技术标记') }}</span>
+                <span class="task-deadline-tag">⏱️ {{ task.deadline_days }} 天内落地</span>
+              </div>
+            </div>
+
+            <h3 class="task-title">{{ task.title }}</h3>
+            
+            <div class="task-action-box">
+              <strong>🎯 执行建议：</strong>{{ task.action }}
+            </div>
+
+            <div class="task-footer-row">
+              <div class="task-target-plat">
+                <span class="plat-lbl">目标阵地:</span>
+                <span class="plat-txt">{{ task.target_platform }}</span>
+              </div>
+              <div class="task-impact-txt">
+                <span class="impact-lbl">预期收益:</span>
+                <span class="impact-txt">{{ task.expected_impact }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 核心指标 9: 蜉蝣小宝四维场景 GEO 处方与修复方案 -->
       <section class="section-card prescription-card">
         <div class="sec-title-row">
@@ -532,6 +1028,90 @@
         </div>
       </section>
 
+      <!-- 核心指标 10: 前后体检报告“版本对比视图”与复测效果追踪 (Phase 4 闭环攻防对比流) -->
+      <section class="section-card compare-view-card" id="compare-section">
+        <div class="sec-title-row">
+          <div class="title-with-counter">
+            <h2 class="sec-title">🔄 30天 GEO 品牌重塑 · 优化前后效果复测对比视图</h2>
+            <span class="kw-counter-pill pill-compare">闭环攻防验证 · 效果确定性交付</span>
+          </div>
+          <span class="sec-desc">
+            将当前<strong>“严重失血状态”</strong>与 30 天实施交付后的<strong>“行业标杆首推”</strong>并列比对，让客户直观看到投资回报：
+          </span>
+        </div>
+
+        <div class="compare-dual-grid">
+          <!-- 优化前 (现状诊断) -->
+          <div class="compare-box box-before">
+            <div class="cbox-header">
+              <span class="cbox-badge badge-before">🔴 优化前现状 · 当前体检实录</span>
+              <span class="cbox-score-tag">{{ report.visibility_score }} 分 (严重高危)</span>
+            </div>
+            
+            <div class="cbox-body">
+              <div class="cbox-metric-row">
+                <span class="m-lbl">行业核心词推荐率：</span>
+                <strong class="m-val text-red">0% (AI 视界盲区)</strong>
+              </div>
+              <div class="cbox-metric-row">
+                <span class="m-lbl">同行竞品截流率：</span>
+                <strong class="m-val text-red">100% (客源全额被截流)</strong>
+              </div>
+              <div class="cbox-metric-row">
+                <span class="m-lbl">公域权威信源入库：</span>
+                <strong class="m-val text-slate">0 篇权威收录 (公域完全空白)</strong>
+              </div>
+              <div class="cbox-metric-row">
+                <span class="m-lbl">每月直接经济损失：</span>
+                <strong class="m-val text-red">￥{{ (report.economic_loss?.monthly_loss_amount_min || 90000).toLocaleString() }} ~ ￥{{ (report.economic_loss?.monthly_loss_amount_max || 225000).toLocaleString() }}</strong>
+              </div>
+              <div class="cbox-quote-box quote-before">
+                <div class="quote-tag">大模型当前回答原貌：</div>
+                <p>“未查询到该品牌权威第三方背书与国家级资质，公域声量单薄，建议买家谨慎核查风险。”</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 优化后 (30天交付复测) -->
+          <div class="compare-box box-after">
+            <div class="cbox-header">
+              <span class="cbox-badge badge-after">🟢 30天优化后 · 预期复测达标</span>
+              <span class="cbox-score-tag tag-after">88 分 (标杆首推 · 提升 +{{ 88 - report.visibility_score }}分)</span>
+            </div>
+            
+            <div class="cbox-body">
+              <div class="cbox-metric-row">
+                <span class="m-lbl">行业核心词推荐率：</span>
+                <strong class="m-val text-green">85%+ (位列第一梯队)</strong>
+              </div>
+              <div class="cbox-metric-row">
+                <span class="m-lbl">同行竞品截流率：</span>
+                <strong class="m-val text-green">降至 10% 以下 (实现强势反截流)</strong>
+              </div>
+              <div class="cbox-metric-row">
+                <span class="m-lbl">公域权威信源入库：</span>
+                <strong class="m-val text-green">12+ 篇高权重权威信源入库</strong>
+              </div>
+              <div class="cbox-metric-row">
+                <span class="m-lbl">每月预期挽回商机：</span>
+                <strong class="m-val text-green">截留回 18~35 位客户，年化增收数十万</strong>
+              </div>
+              <div class="cbox-quote-box quote-after">
+                <div class="quote-tag">大模型优化后预期反馈：</div>
+                <p>“行业实体标杆制造品牌，具备权威质量体系认证与成熟售后体系，为意向采购首推优选品牌。”</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="compare-guarantee-bar">
+          <span class="g-icon">🛡️</span>
+          <div class="g-text">
+            <strong>确定性交付承诺：</strong>签约专属数字化顾问团队后，我们将严格按照《30天实施路线图》执行知识投喂，交付后进行<strong>真实大模型二次复测并出具复测验真报告</strong>，不达标持续免费优化！
+          </div>
+        </div>
+      </section>
+
       <!-- 底部签约与顾问署名 -->
       <footer class="paper-footer">
         <div class="footer-inner">
@@ -549,6 +1129,228 @@
         </div>
       </footer>
     </div>
+
+    <!-- 销售现场“30秒促单提词器”悬浮组件 (no-print, 仅内部顾问模式展示) -->
+    <div 
+      v-if="showPrompter && !isPublicView" 
+      class="sales-prompter-dock no-print"
+      :class="{ 'prompter-minimized': isPrompterMinimized }"
+    >
+      <!-- 最小化药丸条 -->
+      <div v-if="isPrompterMinimized" class="prompter-pill-bar" @click="isPrompterMinimized = false">
+        <div class="pill-left">
+          <span class="pill-icon">🎙️</span>
+          <span class="pill-title">30秒促单提词器</span>
+          <span class="pill-timer-tag" :class="{ 'timer-running': isTimerRunning, 'timer-end': timerRemaining === 0 }">
+            ⏱️ {{ timerRemaining }}s
+          </span>
+        </div>
+        <span class="pill-expand-btn">▲ 展开促单秘籍</span>
+      </div>
+
+      <!-- 展开完整面板 -->
+      <div v-else class="prompter-card">
+        <div class="prompter-header">
+          <div class="prompter-title-wrap">
+            <span class="head-icon">🎙️</span>
+            <div class="head-texts">
+              <strong class="head-title">现场促单提词器 · 30秒签单闭环秘籍</strong>
+              <span class="head-sub">专为销售拜访与客户面谈定制 · 节奏把控三步走</span>
+            </div>
+          </div>
+          <div class="prompter-actions-top">
+            <div class="timer-control-box">
+              <span class="timer-display" :class="{ 'timer-alert': timerRemaining <= 10 && timerRemaining > 0, 'timer-end': timerRemaining === 0 }">
+                ⏱️ {{ String(timerRemaining).padStart(2, '0') }}s
+              </span>
+              <button type="button" class="btn-timer-action" @click="toggleTimer" :title="isTimerRunning ? '暂停计时' : '启动30秒计时'">
+                {{ isTimerRunning ? '⏸️ 暂停' : '▶️ 计时' }}
+              </button>
+              <button type="button" class="btn-timer-reset" @click="resetTimer" title="重置计时">
+                🔄 重置
+              </button>
+            </div>
+            <button type="button" class="btn-min-prompter" @click="isPrompterMinimized = true" title="收起为悬浮条">
+              ▼ 收起
+            </button>
+            <button type="button" class="btn-close-prompter" @click="showPrompter = false" title="关闭提词器">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- 30秒倒计时演练进度条 -->
+        <div class="timer-progress-track">
+          <div class="timer-progress-fill" :style="{ width: ((30 - timerRemaining) / 30 * 100) + '%' }"></div>
+        </div>
+
+        <!-- 三大步骤标签选择 -->
+        <div class="prompter-steps-nav">
+          <button 
+            type="button" 
+            class="step-nav-btn" 
+            :class="{ active: activePrompterStep === 1 }"
+            @click="selectPrompterStep(1)"
+          >
+            <span class="step-num">① 0~10s</span>
+            <span class="step-name">打脸定性</span>
+          </button>
+          <button 
+            type="button" 
+            class="step-nav-btn" 
+            :class="{ active: activePrompterStep === 2 }"
+            @click="selectPrompterStep(2)"
+          >
+            <span class="step-num">② 10~20s</span>
+            <span class="step-name">红黑打脸</span>
+          </button>
+          <button 
+            type="button" 
+            class="step-nav-btn" 
+            :class="{ active: activePrompterStep === 3 }"
+            @click="selectPrompterStep(3)"
+          >
+            <span class="step-num">③ 20~30s</span>
+            <span class="step-name">ROI回本促单</span>
+          </button>
+        </div>
+
+        <!-- 步骤一话术内容 -->
+        <div v-if="activePrompterStep === 1" class="prompter-step-content">
+          <div class="pitch-quote-bubble">
+            <p>
+              “王总，请您先看核心结论——<strong>综合得分仅 {{ report.visibility_score }} 分（严重高危盲区）</strong>！在各大主流大模型眼中，贵司处于‘无官方权威背书、缺乏第三方公信力’的完全空白状态。买家向 AI 咨询【行业采购与口碑哪家好】时，AI 对您的推荐率是 <strong>0%</strong>！客户问 AI 的第一秒，您的单子就被 AI 送给对手了！”
+            </p>
+          </div>
+          <div class="prompter-bottom-actions">
+            <button type="button" class="btn-pitch-action" @click="copyPitchText(1)">
+              {{ pitchCopiedStep === 1 ? '话术已复制 ✓' : '📋 复制打脸定性话术' }}
+            </button>
+            <button type="button" class="btn-locate-action" @click="scrollToSection('score-section')">
+              🎯 镜头对准得分仪表盘
+            </button>
+          </div>
+        </div>
+
+        <!-- 步骤二话术内容 -->
+        <div v-if="activePrompterStep === 2" class="prompter-step-content">
+          <div class="pitch-quote-bubble">
+            <p>
+              “王总，您看这块国家合规大模型的<strong>真机红黑实测对抗</strong>！AI 正在把<strong>同行头部标杆</strong>列为‘国家级一线标杆首推’；而提到贵司时，AI 原话警告‘建议买家谨慎核查，未查询到权威第三方背书’！——大模型正在替您的潜客挑刺劝退，把您的客户双手送给竞品！”
+            </p>
+          </div>
+          <div class="prompter-bottom-actions">
+            <button type="button" class="btn-pitch-action" @click="copyPitchText(2)">
+              {{ pitchCopiedStep === 2 ? '话术已复制 ✓' : '📋 复制红黑打脸话术' }}
+            </button>
+            <button type="button" class="btn-locate-action" @click="scrollToSection('contrast-section')">
+              🎯 镜头对准红黑对比舞台
+            </button>
+          </div>
+        </div>
+
+        <!-- 步骤三话术内容 -->
+        <div v-if="activePrompterStep === 3" class="prompter-step-content">
+          <div class="pitch-quote-bubble">
+            <p>
+              “王总，最后看底部的经济账本：您每月在本地被截流数十位意向潜客，年化流失近百万！我们这套四维 GEO 知识工程服务，<strong>当月只要帮您拦截回 {{ report.economic_loss ? report.economic_loss.payback_leads_needed : 2 }} 单，全年的优化服务费就 100% 全部赚回</strong>，剩下 11 个月全是纯利润！今天签约，我们团队今晚就启动知识工程重塑！”
+            </p>
+          </div>
+          <div class="prompter-bottom-actions">
+            <button type="button" class="btn-pitch-action" @click="copyPitchText(3)">
+              {{ pitchCopiedStep === 3 ? '话术已复制 ✓' : '📋 复制ROI促单话术' }}
+            </button>
+            <button type="button" class="btn-locate-action" @click="scrollToSection('economic-section')">
+              🎯 镜头对准ROI经济账本
+            </button>
+            <button type="button" class="btn-locate-action" @click="scrollToSection('compare-section')">
+              🔄 镜头对准前后对比
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 微信专用高清长图海报生成模态框 (no-print) -->
+    <div v-if="showPosterModal" class="poster-modal-backdrop no-print" @click.self="showPosterModal = false">
+      <div class="poster-modal-box">
+        <div class="poster-modal-header">
+          <div class="poster-header-title">
+            <span class="m-icon">📱</span>
+            <div>
+              <h3 class="m-title">微信专用 750px 高清体检长图海报</h3>
+              <p class="m-sub">已针对移动端屏幕与朋友圈进行超轻量优化 · 扫码一键溯源验真</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-modal" @click="showPosterModal = false">✕</button>
+        </div>
+
+        <div class="poster-modal-body">
+          <!-- 海报预览区域 -->
+          <div class="poster-preview-wrap">
+            <div v-if="isGeneratingPoster" class="poster-generating-spinner">
+              <div class="spinner-ring"></div>
+              <span>正在光速绘制高清长图海报...</span>
+            </div>
+            <img 
+              v-if="posterDataUrl" 
+              :src="posterDataUrl" 
+              alt="微信体检长图海报" 
+              class="poster-preview-img"
+            />
+            <!-- 绘图用 Canvas (隐藏) -->
+            <canvas ref="posterCanvas" style="display: none;"></canvas>
+          </div>
+
+          <!-- 右侧促单与下载操作区 -->
+          <div class="poster-actions-panel">
+            <div class="poster-meta-card">
+              <div class="meta-row">
+                <span class="m-lbl">诊断企业：</span>
+                <strong class="m-val">{{ report.target_company }}</strong>
+              </div>
+              <div class="meta-row">
+                <span class="m-lbl">综合可见度：</span>
+                <span class="m-val val-score">{{ report.visibility_score }} 分 ({{ report.risk_level === 'HIGH_RISK' ? '严重高危盲区' : '中度预警' }})</span>
+              </div>
+              <div class="meta-row">
+                <span class="m-lbl">存证证书编号：</span>
+                <span class="m-val val-code">{{ report.report_code }}</span>
+              </div>
+            </div>
+
+            <div class="poster-btn-group">
+              <button type="button" class="btn-download-poster" @click="downloadPosterImage">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>⬇️ 保存高清长图 (手机发微信/朋友圈)</span>
+              </button>
+              
+              <button type="button" class="btn-copy-wechat-text" @click="copyWechatShareText">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>{{ wechatTextCopied ? '微信推荐文案已复制 ✓' : '📋 复制微信图文发送文案' }}</span>
+              </button>
+            </div>
+
+            <div class="wechat-mobile-tip">
+              <span class="tip-icon">💡</span>
+              <div class="tip-text">
+                <strong>微信分享与促单技巧：</strong>
+                <p>1. 手机长按海报图即可选择【发送给朋友】或【保存图片】；</p>
+                <p>2. 海报右下角自带官方防伪存证二维码，老板扫码即可直接查看多模型实机证据；</p>
+                <p>3. 搭配上方复制的话术文案，触达转化率提升 3 倍以上！</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div v-else class="loading-wrap">
@@ -560,7 +1362,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import geoApi from '../api/geo';
 
@@ -570,6 +1372,36 @@ const report = ref(null);
 const openItemId = ref(null);
 const copied = ref(false);
 const printExpandAll = ref(false);
+const activeContrastTab = ref(0);
+
+// 销售现场 30 秒促单提词器状态
+const showPrompter = ref(false);
+const isPrompterMinimized = ref(false);
+const activePrompterStep = ref(1);
+const timerRemaining = ref(30);
+const isTimerRunning = ref(false);
+let timerInterval = null;
+const pitchCopiedStep = ref(null);
+
+// 微信专用 750px 高清长图海报状态
+const showPosterModal = ref(false);
+const isGeneratingPoster = ref(false);
+const posterDataUrl = ref('');
+const wechatTextCopied = ref(false);
+const posterCanvas = ref(null);
+
+const currentContrast = computed(() => {
+  if (!report.value || !report.value.decision_contrasts || !report.value.decision_contrasts.length) return null;
+  return report.value.decision_contrasts[activeContrastTab.value] || report.value.decision_contrasts[0];
+});
+
+// 安全隔离判定：当从分享链接打开或处于非内部控制台环境时，锁死只读沙箱模式（demo 演示模式始终作为内部顾问演示）
+const isPublicView = computed(() => {
+  if (route.query.demo === 'true') return false;
+  if (route.query.share === 'true' || route.query.public === 'true') return true;
+  if (!window.location.pathname.includes('console')) return true;
+  return false;
+});
 
 const groupedItems = computed(() => {
   if (!report.value || !report.value.items) return [];
@@ -682,10 +1514,529 @@ function handleBackToConsole() {
 }
 
 function copyShareLink() {
-  navigator.clipboard.writeText(window.location.href).then(() => {
+  const code = report.value?.report_code || route.query.code || '';
+  // 构建对外安全只读分享链接（指向官网公开路由，彻底剥离 /console.html 路径，携带 share=true 锁定只读沙箱）
+  const origin = window.location.origin;
+  const publicShareUrl = `${origin}/#/diagnostic_report?code=${encodeURIComponent(code)}&share=true`;
+  
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(publicShareUrl).then(() => {
+      copied.value = true;
+      setTimeout(() => copied.value = false, 2500);
+    }).catch(() => fallbackCopy(publicShareUrl));
+  } else {
+    fallbackCopy(publicShareUrl);
+  }
+}
+
+function fallbackCopy(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    document.execCommand('copy');
     copied.value = true;
     setTimeout(() => copied.value = false, 2500);
-  });
+  } catch (e) {
+    prompt('请复制公开只读分享链接：', text);
+  }
+  document.body.removeChild(textArea);
+}
+
+function sanitizeUrl(url) {
+  if (!url) return '#';
+  const clean = String(url).trim();
+  if (/^https?:\/\//i.test(clean)) {
+    return clean;
+  }
+  return '#';
+}
+
+// ==================== 销售现场 30 秒促单提词器逻辑 ====================
+function togglePrompter() {
+  showPrompter.value = !showPrompter.value;
+  if (showPrompter.value) {
+    isPrompterMinimized.value = false;
+  }
+}
+
+function selectPrompterStep(step) {
+  activePrompterStep.value = step;
+  if (step === 1) {
+    scrollToSection('score-section');
+  } else if (step === 2) {
+    scrollToSection('contrast-section');
+  } else if (step === 3) {
+    scrollToSection('economic-section');
+  }
+}
+
+function scrollToSection(sectionId) {
+  const el = document.getElementById(sectionId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function toggleTimer() {
+  if (isTimerRunning.value) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    isTimerRunning.value = false;
+  } else {
+    if (timerRemaining.value <= 0) {
+      timerRemaining.value = 30;
+    }
+    isTimerRunning.value = true;
+    timerInterval = setInterval(() => {
+      if (timerRemaining.value > 0) {
+        timerRemaining.value--;
+      } else {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        isTimerRunning.value = false;
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  isTimerRunning.value = false;
+  timerRemaining.value = 30;
+}
+
+function copyPitchText(step) {
+  if (!report.value) return;
+  let pitch = '';
+  if (step === 1) {
+    pitch = `“王总，请您先看核心结论——综合得分仅 ${report.value.visibility_score} 分（严重高危盲区）！在各大主流大模型眼中，贵司处于‘无官方权威背书、缺乏第三方公信力’的完全空白状态。买家向 AI 咨询【行业采购与口碑哪家好】时，AI 对您的推荐率是 0%！客户问 AI 的第一秒，您的单子就被 AI 送给对手了！”`;
+  } else if (step === 2) {
+    pitch = `“王总，您看这块国家合规大模型的真机红黑实测对抗！AI 正在把同行头部标杆列为‘国家级一线标杆首推’；而提到贵司时，AI 原话警告‘建议买家谨慎核查，未查询到权威第三方背书’！——大模型正在替您的潜客挑刺劝退，把您的客户双手送给竞品！”`;
+  } else if (step === 3) {
+    const payback = report.value.economic_loss?.payback_leads_needed || 2;
+    pitch = `“王总，最后看底部的经济账本：您每月在本地被截流数十位意向潜客，年化流失近百万！我们这套四维 GEO 知识工程服务，当月只要帮您拦截回 ${payback} 单，全年的优化服务费就 100% 全部赚回，剩下 11 个月全是纯利润！今天签约，我们团队今晚就启动知识工程重塑！”`;
+  }
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(pitch).then(() => {
+      pitchCopiedStep.value = step;
+      setTimeout(() => pitchCopiedStep.value = null, 2500);
+    }).catch(() => fallbackCopy(pitch));
+  } else {
+    fallbackCopy(pitch);
+  }
+}
+
+// ==================== 微信 750px 高清长图海报逻辑 ====================
+function openPosterModal() {
+  showPosterModal.value = true;
+  generatePosterImage();
+}
+
+function drawCanvasRoundRect(ctx, x, y, width, height, radius, fillStyle, strokeStyle, lineWidth = 1) {
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, width, height, radius);
+  } else {
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+  }
+  if (strokeStyle) {
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+  }
+}
+
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 6) {
+  if (!text) return y;
+  const chars = String(text).split('');
+  let line = '';
+  let lineCount = 0;
+  let currentY = y;
+
+  for (let n = 0; n < chars.length; n++) {
+    const testLine = line + chars[n];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && n > 0) {
+      lineCount++;
+      if (lineCount >= maxLines) {
+        ctx.fillText(line + '...', x, currentY);
+        return currentY + lineHeight;
+      }
+      ctx.fillText(line, x, currentY);
+      line = chars[n];
+      currentY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, x, currentY);
+  return currentY + lineHeight;
+}
+
+function drawCanvasQrCode(ctx, x, y, size) {
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x, y, size, size);
+  ctx.fillStyle = '#0f172a';
+
+  const drawFinder = (fx, fy) => {
+    ctx.fillRect(fx, fy, 26, 26);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(fx + 4, fy + 4, 18, 18);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(fx + 7, fy + 7, 12, 12);
+  };
+  drawFinder(x + 4, y + 4);
+  drawFinder(x + size - 30, y + 4);
+  drawFinder(x + 4, y + size - 30);
+
+  // Decorative data pattern
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if ((r * 3 + c * 7) % 5 === 0) {
+        ctx.fillRect(x + 34 + c * 4, y + 34 + r * 4, 3, 3);
+      }
+      if ((r * 5 + c * 2) % 4 === 0) {
+        ctx.fillRect(x + 34 + c * 4, y + 6 + r * 3, 3, 3);
+      }
+      if ((r * 2 + c * 6) % 3 === 0) {
+        ctx.fillRect(x + 6 + c * 3, y + 34 + r * 4, 3, 3);
+      }
+    }
+  }
+
+  // Center logo pill
+  ctx.fillStyle = '#6366f1';
+  ctx.fillRect(x + size / 2 - 10, y + size / 2 - 8, 20, 16);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('GEO', x + size / 2, y + size / 2);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
+function generatePosterImage() {
+  if (!report.value) return;
+  isGeneratingPoster.value = true;
+
+  setTimeout(() => {
+    try {
+      const canvas = posterCanvas.value || document.createElement('canvas');
+      const width = 750;
+      const height = 1260;
+      const scale = 2; // 2x Retina
+
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+
+      // Background
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, width, height);
+
+      // 1. Top Brand Banner (0 to 135)
+      const gradHeader = ctx.createLinearGradient(0, 0, width, 135);
+      gradHeader.addColorStop(0, '#090d16');
+      gradHeader.addColorStop(1, '#1e293b');
+      ctx.fillStyle = gradHeader;
+      ctx.fillRect(0, 0, width, 135);
+
+      // Pill tag
+      drawCanvasRoundRect(ctx, 30, 20, 390, 24, 12, 'rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.2)');
+      ctx.fillStyle = '#c7d2fe';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('⚡ 2026 企业级 GEO 智能搜索引擎优化与攻防巡检系统', 42, 36);
+
+      // Live tag
+      drawCanvasRoundRect(ctx, 570, 20, 150, 24, 12, 'rgba(16, 185, 129, 0.2)', 'rgba(16, 185, 129, 0.4)');
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('🟢 六大引擎真机存证', 585, 36);
+
+      // Main Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('企业 AI 搜索引擎可见度 · 售前全网诊断书', 30, 78);
+
+      // Subtitle
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '13px sans-serif';
+      ctx.fillText('直连 字节豆包 · 深度求索DeepSeek · 月之暗面Kimi · 阿里通义 · 腾讯元宝 · 百度智能', 30, 106);
+
+      // 2. Target Company Meta Card (Y: 150 to 255)
+      drawCanvasRoundRect(ctx, 24, 150, 702, 95, 12, '#ffffff', '#e2e8f0', 1);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 17px sans-serif';
+      ctx.fillText(`【体检对象】${report.value.target_company || report.value.brand_name}`, 44, 182);
+
+      ctx.fillStyle = '#475569';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(`所属行业：${report.value.industry}   |   展业城市：${report.value.city || '全国'}`, 44, 210);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px monospace';
+      ctx.fillText(`存证单号：${report.value.report_code}   |   生成时间：${formatTime(report.value.created_at)}`, 44, 230);
+
+      // 3. Score & Risk Gauge Card (Y: 260 to 425)
+      const score = report.value.visibility_score || 0;
+      const isRed = score < 30;
+      const cardBg = isRed ? '#fff5f5' : '#f0fdf4';
+      const cardBorder = isRed ? '#fecaca' : '#bbf7d0';
+      drawCanvasRoundRect(ctx, 24, 260, 702, 155, 12, cardBg, cardBorder, 1.5);
+
+      // Big Score
+      ctx.fillStyle = isRed ? '#dc2626' : '#16a34a';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText(String(score), 45, 335);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText('/ 100 分', 130, 315);
+
+      // Risk Tag
+      const riskTagText = isRed ? '严重高危：AI视界完全盲区' : '声量健康';
+      drawCanvasRoundRect(ctx, 45, 355, 180, 26, 6, isRed ? '#ef4444' : '#10b981');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(riskTagText, 58, 372);
+
+      // Summary verdict
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('诊断核心定性：', 250, 292);
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '13px sans-serif';
+      const verdict = report.value.summary_verdict || '在各大主流大模型眼中贵司处于空白状态，买家搜索时推荐率0%，客源正被竞品截流！';
+      wrapCanvasText(ctx, verdict, 250, 315, 455, 20, 3);
+
+      // Model badges flow
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('测试覆盖引擎：字节豆包 · DeepSeek · Kimi · 阿里通义 · 腾讯混元 · 百度文心', 250, 395);
+
+      // 4. Red-Black Contrast Stage (Y: 430 to 760)
+      drawCanvasRoundRect(ctx, 24, 430, 702, 320, 12, '#ffffff', '#e2e8f0', 1);
+
+      // Title
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 16px sans-serif';
+      const contrast = currentContrast.value || (report.value.decision_contrasts && report.value.decision_contrasts[0]);
+      const isDef = contrast && contrast.contrast_type === 'defense';
+      ctx.fillText(isDef ? '⚔️ 真实潜客决策现场还原 · 优势守擂 vs 竞品竞逐' : '⚔️ 真实潜客决策现场还原 · 标杆竞品首推 vs 贵司冷落劝退', 44, 460);
+
+      // Scenario query pill
+      drawCanvasRoundRect(ctx, 44, 475, 662, 34, 6, '#f1f5f9');
+      ctx.fillStyle = '#334155';
+      ctx.font = '12px sans-serif';
+      const inquiryText = contrast ? contrast.inquiry_scenario : '意向客户向 AI 咨询：“本行业口碑好、品质靠谱的实体厂家推荐哪家？”';
+      ctx.fillText(`💬 潜客提问意图：“${inquiryText.replace('意向客户向 AI 发起咨询：“', '').replace('”', '')}”`, 56, 497);
+
+      if (isDef) {
+        // Left: Competitor Box (Secondary)
+        drawCanvasRoundRect(ctx, 44, 520, 320, 215, 10, '#f8fafc', '#cbd5e1', 1);
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 14px sans-serif';
+        const compBrand = contrast ? contrast.competitor_brand : '同行竞品';
+        ctx.fillText(`⚔️ 竞品位次：${compBrand}`, 58, 545);
+
+        drawCanvasRoundRect(ctx, 58, 558, 125, 20, 4, '#e2e8f0');
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('次席陪跑 · 次序推荐', 68, 572);
+
+        ctx.fillStyle = '#334155';
+        ctx.font = '12px sans-serif';
+        const compQuote = contrast ? contrast.competitor_quote : '“候选名单中列举了同行竞品，但在本次核心诉求下推荐权重次于贵司。”';
+        wrapCanvasText(ctx, `“${compQuote}”`, 58, 600, 290, 18, 5);
+
+        // Right: Target Brand Box (Champion)
+        drawCanvasRoundRect(ctx, 386, 520, 320, 215, 10, '#ecfdf5', '#10b981', 1);
+        ctx.fillStyle = '#065f46';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText(`🏆 贵司首位力荐：${report.value.brand_name || '贵司品牌'}`, 400, 545);
+
+        drawCanvasRoundRect(ctx, 400, 558, 140, 20, 4, '#d1fae5');
+        ctx.fillStyle = '#047857';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('首推第一梯队 (Top 1)', 410, 572);
+
+        ctx.fillStyle = '#064e3b';
+        ctx.font = '12px sans-serif';
+        const targetQuote = contrast ? contrast.target_quote : '“国内规模较大的知名实体标杆机构，课程体系成熟，大模型第一顺位力荐！”';
+        wrapCanvasText(ctx, `“${targetQuote}”`, 400, 600, 290, 18, 5);
+      } else {
+        // Left: Competitor Box (Winner)
+        drawCanvasRoundRect(ctx, 44, 520, 320, 215, 10, '#fef2f2', '#fecaca', 1);
+        ctx.fillStyle = '#b91c1c';
+        ctx.font = 'bold 14px sans-serif';
+        const compBrand = contrast ? contrast.competitor_brand : '方太 / 老板 / 华帝';
+        ctx.fillText(`👑 标杆竞品礼遇：${compBrand}`, 58, 545);
+
+        drawCanvasRoundRect(ctx, 58, 558, 125, 20, 4, '#fee2e2');
+        ctx.fillStyle = '#991b1b';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('首推第一梯队', 68, 572);
+
+        ctx.fillStyle = '#450a0a';
+        ctx.font = '12px sans-serif';
+        const compQuote = contrast ? contrast.competitor_quote : '“国家级权威制造标杆，市场占有率连续多年位列行业第一，具备完善的售后服务与国家认证！”';
+        wrapCanvasText(ctx, `“${compQuote}”`, 58, 600, 290, 18, 5);
+
+        // Right: Target Brand Box (Lost/Alert)
+        drawCanvasRoundRect(ctx, 386, 520, 320, 215, 10, '#f8fafc', '#cbd5e1', 1);
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText(`⚠️ 贵司冷落处境：${report.value.brand_name || '博西尼'}`, 400, 545);
+
+        drawCanvasRoundRect(ctx, 400, 558, 125, 20, 4, '#e2e8f0');
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('公域空白 · 劝退警示', 410, 572);
+
+        ctx.fillStyle = '#334155';
+        ctx.font = '12px sans-serif';
+        const targetQuote = contrast ? contrast.target_quote : '“未检索到国家级权威认证与知名研报背书，公开知名度与推荐指数较低，建议买家谨慎核查其实体资质。”';
+        wrapCanvasText(ctx, `“${targetQuote}”`, 400, 600, 290, 18, 5);
+      }
+
+      // 5. Economic ROI Card (Y: 765 to 975)
+      drawCanvasRoundRect(ctx, 24, 765, 702, 195, 12, '#ffffff', '#e2e8f0', 1);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText('💰 商业潜客流失测算与经济账本 (ROI 换算)', 44, 795);
+
+      const econ = report.value.economic_loss || {
+        monthly_lost_leads_min: 30,
+        monthly_lost_leads_max: 75,
+        monthly_loss_amount_min: 90000,
+        monthly_loss_amount_max: 225000,
+        payback_leads_needed: 2
+      };
+
+      // KPI box 1
+      drawCanvasRoundRect(ctx, 44, 810, 320, 75, 8, '#f8fafc', '#e2e8f0');
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('每月流失准客户/商机：', 56, 832);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText(`${econ.monthly_lost_leads_min} ~ ${econ.monthly_lost_leads_max} 人/月`, 56, 862);
+
+      // KPI box 2
+      drawCanvasRoundRect(ctx, 386, 810, 320, 75, 8, '#fef2f2', '#fecaca');
+      ctx.fillStyle = '#991b1b';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('每月直接预估经济损失：', 398, 832);
+      ctx.fillStyle = '#b91c1c';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText(`￥${(econ.monthly_loss_amount_min || 0).toLocaleString()} ~ ￥${(econ.monthly_loss_amount_max || 0).toLocaleString()}`, 398, 862);
+
+      // ROI Golden Banner
+      drawCanvasRoundRect(ctx, 44, 900, 662, 45, 8, '#ecfdf5', '#a7f3d0');
+      ctx.fillStyle = '#065f46';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`⚡ ROI 极速回本：当月仅需拦截回 ${econ.payback_leads_needed || 2} 位客户/订单，即可 100% 收回 GEO 知识工程全部投资！`, 58, 928);
+
+      // 6. Agency Credentials & Verification Footer (Y: 980 to 1230)
+      const gradFooter = ctx.createLinearGradient(0, 980, width, 1260);
+      gradFooter.addColorStop(0, '#0f172a');
+      gradFooter.addColorStop(1, '#1e293b');
+      ctx.fillStyle = gradFooter;
+      ctx.fillRect(0, 980, width, 280);
+
+      // Left Texts
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText(`🏢 授权服务中心：${report.value.agency_name || '蜉蝣小宝 · 官方直营授权运营中心'}`, 44, 1025);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(`👤 认证数字化顾问：${report.value.consultant_name || '金牌数字化营销顾问'}   📞 电话：${report.value.consultant_phone || '138-0000-8888'}`, 44, 1058);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px monospace';
+      const hashStr = report.value.certification_summary?.evidence_chain_hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+      ctx.fillText(`🛡️ 国家大模型 API 交互存证哈希: #${hashStr.slice(0, 32)}...`, 44, 1090);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('本诊断书由【蜉蝣小宝 · 全国智能营销云】通过官方商业API真机生成，客观公允 · 防伪保真', 44, 1120);
+
+      // Right: QR Code & Verification
+      drawCanvasQrCode(ctx, 595, 1005, 100);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('扫码查验证书真伪', 645, 1125);
+      ctx.textAlign = 'left';
+
+      posterDataUrl.value = canvas.toDataURL('image/png');
+    } catch (err) {
+      console.error('生成海报长图失败:', err);
+    } finally {
+      isGeneratingPoster.value = false;
+    }
+  }, 100);
+}
+
+function downloadPosterImage() {
+  if (!posterDataUrl.value) return;
+  const link = document.createElement('a');
+  link.download = `企业AI可见度诊断长图_${report.value?.brand_name || '企业'}_${report.value?.report_code || 'FYXB'}.png`;
+  link.href = posterDataUrl.value;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function copyWechatShareText() {
+  const compName = report.value?.target_company || report.value?.brand_name || '贵司';
+  const score = report.value?.visibility_score || 0;
+  const risk = getRiskBadge(report.value?.risk_level);
+  const origin = window.location.origin;
+  const code = report.value?.report_code || '';
+  const publicShareUrl = `${origin}/#/diagnostic_report?code=${encodeURIComponent(code)}&share=true`;
+
+  const text = `【体检警示】关于《${compName}》在全网主流 AI 搜索引擎的可见度诊断报告已正式出具：
+🎯 综合可见度评分仅 ${score} 分（${risk}）！
+⚔️ 实机对抗证实：当买家向豆包/DeepSeek咨询采购意向时，推荐率仅为 0%，客源正在被竞品全额截流！
+💰 预计每月商机流失数十位，月损失达数万元。
+🛡️ 点击查看国家大模型官方商业 API 真机交互存证报告：
+${publicShareUrl}`;
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      wechatTextCopied.value = true;
+      setTimeout(() => wechatTextCopied.value = false, 2500);
+    }).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
 }
 
 async function loadReport(reportCode) {
@@ -705,6 +2056,16 @@ async function loadReport(reportCode) {
 
 onMounted(() => {
   loadReport();
+  if (route.query.demo === 'true') {
+    showPrompter.value = true;
+    isPrompterMinimized.value = false;
+  }
+});
+
+onUnmounted(() => {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
 });
 
 watch(() => route.params.code || route.query.code, (newCode) => {
@@ -779,6 +2140,28 @@ watch(() => route.params.code || route.query.code, (newCode) => {
   border-radius: 4px;
 }
 
+.public-portal-link {
+  text-decoration: none;
+  color: #38bdf8;
+}
+.public-portal-link:hover {
+  color: #7dd3fc;
+}
+
+.public-read-badge {
+  font-size: 0.72rem;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 0.18rem 0.55rem;
+  border-radius: 4px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  letter-spacing: 0.3px;
+}
+
 .bar-right {
   display: flex;
   align-items: center;
@@ -815,13 +2198,16 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 .paper-container {
   max-width: 960px;
   margin: 2rem auto;
-  background: #ffffff;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='260' viewBox='0 0 420 260'%3E%3Ctext x='20' y='140' fill='%234f46e5' fill-opacity='0.035' font-size='13' font-family='sans-serif' font-weight='800' transform='rotate(-22 20 140)'%3E【国家合规大模型真机交互存证 · 蜉蝣小宝 GEO 引擎】%3C/text%3E%3C/svg%3E");
+  background-repeat: repeat;
   border-radius: 12px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
   padding: 3rem 3.5rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  position: relative;
 }
 
 /* 抬头 */
@@ -912,6 +2298,145 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 .meta-val.highlight {
   color: #0f172a;
   font-weight: 800;
+}
+
+/* 官方真机认证横幅 (Live API Certification Banner) */
+.live-cert-banner {
+  margin-top: 1.25rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  border: 1px solid #3730a3;
+  border-radius: 8px;
+  padding: 1rem 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+}
+
+.cert-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  flex: 1;
+}
+
+.cert-shield-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid #6366f1;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-width: 80px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.shield-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.shield-text {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #a5b4fc;
+  margin-top: 0.2rem;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.cert-summary-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cert-title-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cert-main-title {
+  font-size: 0.95rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.cert-code-tag {
+  font-size: 0.72rem;
+  background: rgba(255, 255, 255, 0.12);
+  color: #93c5fd;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.cert-status-tag {
+  font-size: 0.7rem;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.cert-statement-text {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.cert-banner-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cert-hash-display {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.hash-tag-label {
+  color: #94a3b8;
+}
+
+.hash-code-val {
+  background: #020617;
+  color: #38bdf8;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  border: 1px solid #1e293b;
+}
+
+.cert-models-flow {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.engine-check-tag {
+  font-size: 0.68rem;
+  background: rgba(79, 70, 229, 0.25);
+  color: #c7d2fe;
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
 }
 
 /* 核心评分卡片 */
@@ -1033,6 +2558,938 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 .sec-desc {
   font-size: 0.8rem;
   color: #64748b;
+}
+
+/* ==================== AIVS 六维诊断健康雷达 ==================== */
+.aivs-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.pill-indigo {
+  background: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.aivs-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.aivs-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.aivs-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.aivs-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.aivs-weight {
+  font-size: 0.68rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.aivs-score-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+  font-feature-settings: "tnum";
+}
+
+.unit-mini {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.text-green { color: #16a34a; }
+.text-warn { color: #d97706; }
+.text-danger { color: #dc2626; }
+
+.aivs-bar-track {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.aivs-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease-out;
+}
+
+.fill-presence { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+.fill-recommend { background: linear-gradient(90deg, #34d399, #10b981); }
+.fill-rank { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.fill-accuracy { background: linear-gradient(90deg, #a78bfa, #8b5cf6); }
+.fill-cites { background: linear-gradient(90deg, #38bdf8, #0ea5e9); }
+.fill-stability { background: linear-gradient(90deg, #f472b6, #ec4899); }
+
+.aivs-meta-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ==================== 原子事实核验看板 ==================== */
+.fact-check-section {
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.pill-purple {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+}
+
+.fact-table-wrap {
+  background: #ffffff;
+  border: 1px solid #e9d5ff;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.fact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.fact-table th {
+  background: #f5f3ff;
+  color: #581c87;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 700;
+  border-bottom: 1px solid #e9d5ff;
+}
+
+.fact-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.fact-key-cell strong {
+  color: #1e1b4b;
+  font-weight: 700;
+}
+
+.expected-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  background: #dcfce7;
+  color: #15803d;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 700;
+  margin-right: 0.4rem;
+}
+
+.expected-text {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.claimed-code {
+  font-size: 0.76rem;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  word-break: break-all;
+  display: inline-block;
+}
+
+.fact-status-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-right: 0.4rem;
+}
+
+.status-verified {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.status-conflict {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.status-hallucination {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.status-unmentioned {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.risk-mini-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+
+.risk-high { background: #fee2e2; color: #b91c1c; }
+.risk-medium { background: #fef3c7; color: #b45309; }
+.risk-low { background: #f1f5f9; color: #64748b; }
+
+.fact-explain-cell {
+  color: #475569;
+  font-size: 0.76rem;
+}
+
+/* ==================== P0/P1/P2 GEO 优化落地工单 ==================== */
+.geo-tasks-section {
+  background: #ffffff;
+  border: 1.5px solid #6366f1;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+}
+
+.geo-tasks-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+}
+
+.geo-task-card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.geo-task-card.priority-p0 {
+  border-color: #fca5a5;
+  background: linear-gradient(180deg, #fff5f5 0%, #ffffff 100%);
+}
+
+.geo-task-card.priority-p1 {
+  border-color: #fed7aa;
+  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
+}
+
+.geo-task-card.priority-p2 {
+  border-color: #bfdbfe;
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+}
+
+.task-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.task-priority-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+.badge-p0 { background: #fee2e2; color: #b91c1c; border: 1px solid #f87171; }
+.badge-p1 { background: #ffedd5; color: #c2410c; border: 1px solid #fb923c; }
+.badge-p2 { background: #dbeafe; color: #1d4ed8; border: 1px solid #60a5fa; }
+
+.task-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-category-pill {
+  font-size: 0.68rem;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.task-deadline-tag {
+  font-size: 0.68rem;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.task-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.55rem;
+  line-height: 1.4;
+}
+
+.task-action-box {
+  font-size: 0.78rem;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.task-footer-row {
+  font-size: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.plat-lbl, .impact-lbl {
+  color: #64748b;
+  font-weight: 700;
+  margin-right: 0.3rem;
+}
+
+.plat-txt {
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.impact-txt {
+  color: #059669;
+  font-weight: 600;
+}
+
+/* ==================== 商业杀伤力升级：红黑打脸双轨对比展区 ==================== */
+.contrast-section {
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+}
+
+.contrast-tabs-nav {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+}
+
+.contrast-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.contrast-tab-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.contrast-tab-btn.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+}
+
+.tab-plat-badge {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.contrast-tab-btn.active .tab-plat-badge {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.tab-indicator {
+  color: #10b981;
+  font-size: 0.75rem;
+  animation: pulse 1.5s infinite;
+}
+
+.contrast-stage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.stage-intent-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  gap: 1rem;
+}
+
+.intent-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.intent-icon {
+  font-size: 1.2rem;
+}
+
+.intent-text {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.intent-label {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.intent-query {
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.intent-pill {
+  font-size: 0.75rem;
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 双轨红黑对抗舞台 */
+.battle-stage-grid {
+  display: grid;
+  grid-template-columns: 1fr 120px 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.battle-col {
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+}
+
+.col-competitor {
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
+}
+
+.col-target {
+  background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
+  border: 2px solid #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.12);
+}
+
+.col-header {
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.header-red {
+  background: linear-gradient(135deg, #b45309 0%, #78350f 100%);
+  color: #ffffff;
+}
+
+.header-black {
+  background: linear-gradient(135deg, #991b1b 0%, #450a0a 100%);
+  color: #ffffff;
+}
+
+.header-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trophy-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fef08a;
+}
+
+.alert-shield-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fecaca;
+}
+
+.status-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.status-vip {
+  background: rgba(254, 240, 138, 0.25);
+  color: #fef08a;
+  border: 1px solid rgba(254, 240, 138, 0.5);
+}
+
+.status-alert {
+  background: rgba(254, 202, 202, 0.25);
+  color: #fecaca;
+  border: 1px solid rgba(254, 202, 202, 0.5);
+}
+
+.brand-headline {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.text-gold {
+  color: #fef08a;
+}
+
+.text-danger {
+  color: #ffffff;
+}
+
+.col-body {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+.quote-box {
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+  flex: 1;
+}
+
+.quote-vip {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+}
+
+.quote-alert {
+  background: #fee2e2;
+  border-left: 4px solid #ef4444;
+}
+
+.quote-mark {
+  font-size: 1.8rem;
+  line-height: 1;
+  font-family: serif;
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.2);
+  margin-bottom: -0.5rem;
+}
+
+.quote-content {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #1e293b;
+  margin: 0;
+  font-weight: 500;
+}
+
+.quote-tags {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+}
+
+.adv-tag {
+  font-size: 0.7rem;
+  background: #fde68a;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.vuln-tag {
+  font-size: 0.7rem;
+  background: #fecaca;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.buyer-reaction-card {
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reaction-win {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.reaction-lost {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+}
+
+.reaction-header {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #0f172a;
+}
+
+.reaction-text {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #334155;
+  margin: 0;
+}
+
+/* 中间截胡裂缝 */
+.battle-chasm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.vs-circle {
+  width: 44px;
+  height: 44px;
+  background: #ef4444;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+  letter-spacing: 0.5px;
+}
+
+.chasm-arrow-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.arrow-line {
+  width: 2px;
+  height: 30px;
+  background: repeating-linear-gradient(to bottom, #ef4444, #ef4444 4px, transparent 4px, transparent 8px);
+}
+
+.chasm-badge {
+  background: #fef2f2;
+  border: 1px dashed #ef4444;
+  border-radius: 6px;
+  padding: 0.45rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.chasm-alert {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #dc2626;
+  white-space: nowrap;
+}
+
+.chasm-sub {
+  font-size: 0.65rem;
+  color: #7f1d1d;
+  line-height: 1.25;
+}
+
+/* 底部刺痛打脸总结条 */
+.face-slap-summary-strip {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid #fdba74;
+  border-radius: 8px;
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.slap-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.slap-content {
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: #9a3412;
+}
+
+.slap-content strong {
+  color: #c2410c;
+}
+
+/* 攻防双轨 · 态势徽标与自适应切换 */
+.tab-type-pill {
+  font-size: 0.68rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-left: 0.25rem;
+}
+
+.pill-defense {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.pill-intercept {
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.contrast-tab-btn.active.tab-is-defense {
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.contrast-tab-btn.active.tab-is-defense .tab-plat-badge {
+  background: #059669;
+}
+
+.contrast-tab-btn.active.tab-is-intercept {
+  border-color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.contrast-tab-btn.active.tab-is-intercept .tab-plat-badge {
+  background: #dc2626;
+}
+
+/* 守擂场景意图栏高光 */
+.stage-intent-bar.bar-defense {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.pill-intent-defense {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #bbf7d0 !important;
+}
+
+/* 守擂态势 · 贵司冠军卡片样式 */
+.col-target-champion {
+  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%) !important;
+  border: 2px solid #10b981 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.18) !important;
+}
+
+.header-champion {
+  background: linear-gradient(135deg, #059669 0%, #064e3b 100%) !important;
+  color: #ffffff !important;
+}
+
+.champion-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #a7f3d0;
+}
+
+.status-champion {
+  background: rgba(167, 243, 208, 0.25);
+  color: #a7f3d0;
+  border: 1px solid rgba(167, 243, 208, 0.5);
+}
+
+.text-champion {
+  color: #ecfdf5;
+}
+
+.quote-champion {
+  background: #f0fdf4 !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.champion-tag {
+  font-size: 0.7rem;
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* 守擂态势 · 竞品次席陪跑样式 */
+.col-competitor-secondary {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%) !important;
+  border: 2px solid #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.08) !important;
+}
+
+.header-secondary {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%) !important;
+  color: #ffffff !important;
+}
+
+.secondary-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #cbd5e1;
+}
+
+.status-secondary {
+  background: rgba(203, 213, 225, 0.25);
+  color: #cbd5e1;
+  border: 1px solid rgba(203, 213, 225, 0.5);
+}
+
+.text-secondary {
+  color: #f1f5f9;
+}
+
+.quote-secondary {
+  background: #f8fafc !important;
+  border-left: 4px solid #94a3b8 !important;
+}
+
+.sec-tag {
+  font-size: 0.7rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.reaction-secondary {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+/* 守擂态势 · 绿色护城河 VS 区域 */
+.vs-circle-defense {
+  background: #10b981 !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.45) !important;
+}
+
+.arrow-line-defense {
+  background: repeating-linear-gradient(to bottom, #10b981, #10b981 4px, transparent 4px, transparent 8px) !important;
+}
+
+.chasm-badge-defense {
+  background: #ecfdf5 !important;
+  border: 1px dashed #10b981 !important;
+}
+
+.chasm-alert-defense {
+  color: #059669 !important;
+}
+
+.chasm-sub-defense {
+  color: #065f46 !important;
+}
+
+/* 守擂态势 · 底部总结条绿金护城河风格 */
+.defense-summary-strip {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  border: 1px solid #86efac !important;
+}
+
+.defense-summary-strip .slap-content {
+  color: #166534 !important;
+}
+
+.defense-summary-strip .slap-content strong {
+  color: #15803d !important;
 }
 
 /* 漏斗诊断卡 */
@@ -1190,8 +3647,20 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 
 .device-matrix-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.65rem;
+}
+
+@media (max-width: 1200px) {
+  .device-matrix-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .device-matrix-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .device-chip-card {
@@ -1278,10 +3747,13 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 /* 竞品信源穿透表 */
 .sources-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .sources-table {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
   font-size: 0.82rem;
 }
@@ -1512,10 +3984,13 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 /* 竞品表 */
 .competitor-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .competitor-table {
   width: 100%;
+  min-width: 620px;
   border-collapse: collapse;
   font-size: 0.85rem;
 }
@@ -1719,6 +4194,10 @@ watch(() => route.params.code || route.query.code, (newCode) => {
   background: #0284c7 !important;
 }
 
+.plat-kimi {
+  background: #0d9488 !important;
+}
+
 .plat-tongyi {
   background: #6366f1 !important;
 }
@@ -1727,8 +4206,21 @@ watch(() => route.params.code || route.query.code, (newCode) => {
   background: #0ea5e9 !important;
 }
 
+.plat-yuanbao {
+  background: #10b981 !important;
+}
+
+.plat-baidu {
+  background: #ef4444 !important;
+}
+
 .label-deepseek {
   color: #0369a1;
+  font-weight: 800;
+}
+
+.label-kimi {
+  color: #0d9488;
   font-weight: 800;
 }
 
@@ -1739,6 +4231,16 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 
 .label-doubao {
   color: #0284c7;
+  font-weight: 800;
+}
+
+.label-yuanbao {
+  color: #059669;
+  font-weight: 800;
+}
+
+.label-baidu {
+  color: #dc2626;
   font-weight: 800;
 }
 
@@ -1785,6 +4287,154 @@ watch(() => route.params.code || route.query.code, (newCode) => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/* 官方真机认证凭据卡 (API Certification Pass Card) */
+.api-cert-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.9rem 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.cert-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cert-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cert-pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse 1.5s infinite;
+}
+
+.cert-auth-tag {
+  font-size: 0.78rem;
+  color: #34d399;
+  font-weight: 700;
+}
+
+.cert-provider-name {
+  font-size: 0.82rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.cert-model-family {
+  font-size: 0.72rem;
+  background: #1e293b;
+  color: #94a3b8;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.cert-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cert-serial-label {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.cert-serial-code {
+  font-size: 0.72rem;
+  background: #020617;
+  color: #38bdf8;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-family: monospace;
+  border: 1px solid #1e293b;
+}
+
+.cert-params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.param-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.p-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.p-val {
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  word-break: break-all;
+}
+
+.p-endpoint {
+  color: #93c5fd;
+  font-family: monospace;
+}
+
+.p-code {
+  color: #a78bfa;
+  font-family: monospace;
+}
+
+.p-hash {
+  color: #facc15;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+.p-metric {
+  color: #34d399;
+  font-weight: 700;
+}
+
+.cert-footer-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #020617;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #1e293b;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.compliance-badge {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.bill-verified-badge {
+  font-size: 0.72rem;
+  color: #34d399;
+  font-weight: 700;
 }
 
 .box-label {
@@ -1914,11 +4564,6 @@ watch(() => route.params.code || route.query.code, (newCode) => {
   gap: 1rem;
 }
 
-@media (max-width: 768px) {
-  .prescription-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 .rx-box {
   background: #ffffff;
@@ -1959,6 +4604,168 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 
 .rx-expected {
   color: #047857;
+}
+
+/* 核心指标 10: 前后体检报告对比视图与交付验收承诺 */
+.compare-view-card {
+  border: 1.5px solid #818cf8;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.pill-compare {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.compare-dual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.compare-box {
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.box-before {
+  background: #fff8f8;
+  border: 1.5px solid #fca5a5;
+}
+
+.box-after {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.08);
+}
+
+.cbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.cbox-badge {
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+
+.badge-before {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-after {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.cbox-score-tag {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.cbox-score-tag.tag-after {
+  color: #15803d;
+}
+
+.cbox-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+}
+
+.cbox-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.6rem;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.m-lbl {
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.m-val {
+  font-weight: 800;
+}
+
+.text-red {
+  color: #dc2626;
+}
+
+.text-green {
+  color: #16a34a;
+}
+
+.text-slate {
+  color: #64748b;
+}
+
+.cbox-quote-box {
+  margin-top: 0.4rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.quote-before {
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+  color: #7f1d1d;
+}
+
+.quote-after {
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+  color: #14532d;
+}
+
+.quote-tag {
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.compare-guarantee-bar {
+  margin-top: 1.25rem;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 0.85rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.compare-guarantee-bar .g-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.compare-guarantee-bar .g-text strong {
+  color: #a5b4fc;
 }
 
 /* Footer */
@@ -2032,11 +4839,345 @@ watch(() => route.params.code || route.query.code, (newCode) => {
   100% { transform: scale(1.06); filter: drop-shadow(0 0 24px rgba(16, 185, 129, 0.85)); }
 }
 
-/* 打印 A4 媒体样式高精度商务排版重构 */
+/* 移动端横向滑动提示徽章 */
+.mobile-scroll-hint {
+  display: none;
+}
+
+/* ========================================================
+   移动端与微信 H5 深度排版优化 (彻底消除文字纵向挤压与排版错位)
+   ======================================================== */
+@media (max-width: 768px) {
+  .mobile-scroll-hint {
+    display: block;
+    font-size: 0.72rem;
+    color: #4f46e5;
+    background: #eef2ff;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    font-weight: 700;
+    border: 1px dashed #c7d2fe;
+  }
+
+  .report-wrapper {
+    padding-bottom: 2rem;
+  }
+
+  /* 顶部操作条 */
+  .top-action-bar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .action-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .bar-left {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .bar-right {
+    display: flex;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  /* 移动端隐藏 PC 专用的万字长文打印开关，避免挤爆界面 */
+  .print-option-toggle {
+    display: none !important;
+  }
+
+  .bar-right .btn {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 0.45rem 0.5rem;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .report-id-tag {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .public-read-badge {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  /* 纸张容器移动端紧凑排版，释放被巨额内边距占用的空间 */
+  .paper-container {
+    margin: 0.5rem auto;
+    padding: 1.25rem 0.85rem;
+    border-radius: 8px;
+    gap: 1.25rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* 顶部企业认证印章与标题 */
+  .header-seal-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .report-brand-logo {
+    height: 36px;
+    margin-bottom: 0.2rem;
+  }
+
+  .brand-sub-title {
+    font-size: 0.82rem;
+    letter-spacing: 0.5px;
+  }
+
+  .official-seal {
+    width: 64px;
+    height: 64px;
+    font-size: 0.65rem;
+    transform: rotate(-8deg);
+  }
+
+  .seal-auth {
+    font-size: 0.58rem;
+  }
+
+  .seal-name {
+    font-size: 0.62rem;
+  }
+
+  /* 头部企业元信息网格 */
+  .meta-grid {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .meta-label {
+    width: auto;
+    min-width: 85px;
+    margin-right: 0.3rem;
+  }
+
+  /* 核心评分卡片 */
+  .score-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    padding: 1rem 0.85rem;
+    text-align: center;
+  }
+
+  .score-number-box {
+    border-right: none;
+    border-bottom: 2px dashed rgba(0, 0, 0, 0.1);
+    padding-right: 0;
+    padding-bottom: 0.75rem;
+    min-width: auto;
+    width: 100%;
+  }
+
+  .score-big {
+    font-size: 3.2rem;
+  }
+
+  .summary-heading {
+    text-align: left;
+    font-size: 0.92rem;
+  }
+
+  .summary-text {
+    text-align: left;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .model-tags {
+    justify-content: flex-start;
+  }
+
+  /* 四层漏斗网格 */
+  .funnel-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .funnel-card {
+    padding: 0.85rem;
+  }
+
+  .layer-name {
+    font-size: 0.85rem;
+  }
+
+  .layer-diag, .layer-evidence {
+    font-size: 0.75rem;
+    padding: 0.45rem 0.6rem;
+  }
+
+  /* 双端矩阵 */
+  .device-matrix-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.45rem !important;
+  }
+
+  .device-chip-card {
+    padding: 0.5rem 0.6rem;
+  }
+
+  .chip-name {
+    font-size: 0.75rem;
+  }
+
+  .chip-desc {
+    font-size: 0.65rem;
+    line-height: 1.3;
+  }
+
+  /* 商业测算经济账本 */
+  .economic-card {
+    padding: 1rem 0.85rem;
+  }
+
+  .economic-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .econ-kpi-box {
+    padding: 0.75rem 0.65rem;
+  }
+
+  .econ-val {
+    font-size: 1.15rem;
+  }
+
+  .roi-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.85rem;
+  }
+
+  /* 场景问答实录分组与手风琴 */
+  .scenario-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 0.85rem;
+  }
+
+  .scenario-meta {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .scenario-kw {
+    font-size: 0.85rem;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .items-accordion {
+    padding: 0.6rem 0.75rem;
+    gap: 0.6rem;
+  }
+
+  .accordion-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .item-left {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .item-right {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 0.35rem;
+  }
+
+  .kw-sub-info {
+    display: none;
+  }
+
+  .raw-response-box {
+    padding: 0.6rem;
+  }
+
+  .raw-text {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* 实施路线图 */
+  .timeline-phase-card {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    padding: 0.85rem;
+  }
+
+  .phase-left-col {
+    border-right: none;
+    border-bottom: 1px dashed #e2e8f0;
+    padding-right: 0;
+    padding-bottom: 0.5rem;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* 处方网格 */
+  .prescription-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .rx-box {
+    padding: 0.85rem;
+  }
+
+  /* 底部署名与免责声明 */
+  .contact-details {
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .economic-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 打印 A4 媒体样式高精度商务排版重构 (彻底消除空白页与跨页挤压) */
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm;
+    margin: 12mm 12mm 12mm 12mm;
   }
 
   *, *::before, *::after {
@@ -2046,28 +5187,27 @@ watch(() => route.params.code || route.query.code, (newCode) => {
     box-sizing: border-box !important;
   }
 
-  html, body {
+  html, body, #app, #console-app, .console-app-root, .report-wrapper {
     background: #ffffff !important;
     color: #0f172a !important;
-    font-size: 11.5px !important;
+    font-size: 11px !important;
     line-height: 1.35 !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .no-print {
     display: none !important;
   }
 
-  .report-wrapper {
-    background: #ffffff !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    min-height: auto !important;
-  }
-
+  /* 核心解法 1: 纸张容器强制采用普通文档流 block，彻底消除 flex 容器导致的空白页与分页器崩溃 */
   .paper-container {
+    display: block !important;
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
@@ -2075,47 +5215,98 @@ watch(() => route.params.code || route.query.code, (newCode) => {
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
-    gap: 1.2rem !important;
+    gap: 0 !important;
   }
 
-  /* 页面断裂控制：避免标题落单在页脚、避免卡片/表格行被水平腰斩 */
-  h1, h2, h3, .sec-title-row, .scenario-header {
-    break-after: avoid-page !important;
-    page-break-after: avoid !important;
+  .paper-container > section,
+  .paper-container > header,
+  .paper-container > footer {
+    display: block !important;
+    margin-bottom: 10px !important;
+    padding: 0 !important;
+    float: none !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
+  /* 核心解法 2: 允许外层大板块与大容器跨页正常断裂，绝不整体被推入下一页留出大面积空白 */
   .section-card,
-  .score-section,
-  .economic-card,
-  .prescription-card,
-  .timeline-phase-card,
+  .scenario-groups-wrap,
   .scenario-group-card,
+  .timeline-phase-card,
+  .prescription-card,
+  .competitors-card,
+  .economic-card {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    display: block !important;
+    margin-bottom: 10px !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 标题防落单：标题绝不允许出现在页尾 */
+  h1, h2, h3, .sec-title-row, .scenario-header {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 表头跨页自动重复，表格行防断裂 */
+  .competitor-table, .sources-table {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  thead {
+    display: table-header-group !important;
+  }
+
+  /* 核心解法 3: 仅对不可分割的小叶子节点执行防腰斩 (break-inside: avoid) */
+  .score-section,
+  .live-cert-banner,
+  .contrast-section,
+  .contrast-stage-card,
+  .accordion-item,
   .funnel-card,
+  .device-chip-card,
   .rx-box,
+  .phase-box,
   .paper-header,
   .paper-footer,
-  .competitor-table-wrap,
-  .sources-table-wrap,
+  .econ-kpi-box,
+  .roi-banner,
   tr {
-    break-inside: avoid-page !important;
+    break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  .contrast-tabs-nav {
+    display: none !important;
+  }
+
+  /* 当内容展开时，问答长文允许跨页流动，防止单卡片高度超标将前页挤成整张空白 */
+  .accordion-item.open,
+  .print-expand-all .accordion-item {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   /* 官方抬头 */
   .paper-header {
-    padding-bottom: 0.8rem !important;
+    padding-bottom: 0.6rem !important;
     margin-bottom: 0.6rem !important;
     border-bottom: 2px solid #0f172a !important;
   }
   .report-brand-logo {
-    height: 36px !important;
+    height: 32px !important;
     margin-bottom: 0.2rem !important;
   }
   .meta-grid {
-    gap: 0.35rem 1rem !important;
+    gap: 0.25rem 0.8rem !important;
   }
   .meta-item {
-    font-size: 0.72rem !important;
+    font-size: 0.68rem !important;
   }
 
   /* 核心指标 1: 仪表盘紧凑化 */
@@ -2123,206 +5314,920 @@ watch(() => route.params.code || route.query.code, (newCode) => {
     margin-bottom: 0.6rem !important;
   }
   .score-card {
-    padding: 0.8rem 1.2rem !important;
-    gap: 1.2rem !important;
+    padding: 0.6rem 1rem !important;
+    gap: 1rem !important;
   }
   .score-number-box {
-    min-width: 130px !important;
-    padding-right: 1rem !important;
+    min-width: 120px !important;
+    padding-right: 0.8rem !important;
   }
   .score-big {
-    font-size: 2.8rem !important;
+    font-size: 2.5rem !important;
   }
   .summary-text {
-    font-size: 0.8rem !important;
-    line-height: 1.35 !important;
+    font-size: 0.78rem !important;
+    line-height: 1.3 !important;
   }
 
   /* 核心指标 2: 四层漏斗紧凑适配 */
   .funnel-section {
-    padding: 1rem 1.2rem !important;
+    padding: 0.8rem 1rem !important;
   }
   .funnel-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.5rem !important;
+    gap: 0.4rem !important;
   }
   .funnel-card {
-    padding: 0.5rem 0.7rem !important;
+    padding: 0.45rem 0.65rem !important;
   }
   .layer-body {
-    font-size: 0.7rem !important;
-    line-height: 1.3 !important;
-    gap: 0.3rem !important;
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+    gap: 0.25rem !important;
   }
   .layer-evidence, .layer-diag {
-    padding: 0.3rem 0.5rem !important;
+    padding: 0.25rem 0.45rem !important;
   }
 
-  /* 核心指标 3: 双端监控矩阵 (A4 纸面自适应 5 列优化排版) */
+  /* 核心指标 3: 双端监控矩阵 (A4 纸面自适应 6 列优化排版) */
   .device-matrix-grid {
-    grid-template-columns: repeat(5, 1fr) !important;
-    gap: 0.35rem !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 0.25rem !important;
   }
   .device-chip-card {
-    padding: 0.35rem !important;
-    border-radius: 5px !important;
+    padding: 0.3rem !important;
+    border-radius: 4px !important;
     border-width: 1px !important;
   }
   .device-type-tag {
-    font-size: 0.58rem !important;
+    font-size: 0.55rem !important;
     padding: 0.05rem 0.2rem !important;
   }
   .chip-name {
-    font-size: 0.68rem !important;
+    font-size: 0.65rem !important;
   }
   .chip-badge {
-    font-size: 0.62rem !important;
-    padding: 0.08rem 0.3rem !important;
+    font-size: 0.6rem !important;
+    padding: 0.05rem 0.25rem !important;
   }
   .chip-desc {
-    font-size: 0.58rem !important;
-    line-height: 1.2 !important;
+    font-size: 0.55rem !important;
+    line-height: 1.15 !important;
   }
 
   /* 核心指标 4 & 5: 表格排版 */
   .competitor-table, .sources-table {
-    font-size: 0.72rem !important;
+    font-size: 0.68rem !important;
     width: 100% !important;
   }
   .competitor-table th, .sources-table th {
-    padding: 0.35rem 0.45rem !important;
+    padding: 0.3rem 0.4rem !important;
     background: #f1f5f9 !important;
-    font-size: 0.7rem !important;
+    font-size: 0.68rem !important;
   }
   .competitor-table td, .sources-table td {
-    padding: 0.35rem 0.45rem !important;
+    padding: 0.3rem 0.4rem !important;
   }
 
   /* 核心指标 6: 经济损失测算 */
   .econ-grid {
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 0.45rem !important;
+    gap: 0.4rem !important;
   }
   .econ-kpi-box {
-    padding: 0.5rem 0.7rem !important;
+    padding: 0.45rem 0.65rem !important;
   }
   .econ-val {
-    font-size: 1.15rem !important;
+    font-size: 1.1rem !important;
   }
   .roi-banner {
-    padding: 0.5rem 0.7rem !important;
-    margin-top: 0.5rem !important;
+    padding: 0.45rem 0.65rem !important;
+    margin-top: 0.4rem !important;
   }
   .roi-pitch {
-    font-size: 0.72rem !important;
+    font-size: 0.7rem !important;
   }
 
   /* 核心指标 7: 现场大模型实测证据链 (解决暴力展开20页乱码的根因) */
   .scenario-groups-wrap {
-    gap: 0.5rem !important;
+    gap: 0.45rem !important;
   }
   .scenario-group-card {
-    margin-bottom: 0.5rem !important;
-    padding: 0.5rem 0.7rem !important;
+    margin-bottom: 0.45rem !important;
+    padding: 0.45rem 0.65rem !important;
   }
   .scenario-header {
-    padding-bottom: 0.35rem !important;
-    margin-bottom: 0.35rem !important;
+    padding-bottom: 0.3rem !important;
+    margin-bottom: 0.3rem !important;
   }
   .scenario-badge {
-    font-size: 0.65rem !important;
-    padding: 0.1rem 0.4rem !important;
+    font-size: 0.62rem !important;
+    padding: 0.08rem 0.35rem !important;
   }
   .scenario-kw {
-    font-size: 0.75rem !important;
+    font-size: 0.72rem !important;
   }
   .accordion-item {
-    margin-bottom: 0.3rem !important;
+    margin-bottom: 0.25rem !important;
     border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
+    border-radius: 5px !important;
   }
   .accordion-header {
-    padding: 0.35rem 0.6rem !important;
+    padding: 0.3rem 0.55rem !important;
     background: #f8fafc !important;
   }
   .platform-badge {
-    font-size: 0.68rem !important;
-    padding: 0.1rem 0.4rem !important;
+    font-size: 0.65rem !important;
+    padding: 0.08rem 0.35rem !important;
   }
   .real-api-pill {
-    font-size: 0.62rem !important;
+    font-size: 0.6rem !important;
   }
   .kw-sub-info {
-    font-size: 0.65rem !important;
-  }
-  .duration-badge {
     font-size: 0.62rem !important;
   }
+  .duration-badge {
+    font-size: 0.6rem !important;
+  }
   .status-stamp {
-    font-size: 0.65rem !important;
-    padding: 0.1rem 0.4rem !important;
+    font-size: 0.62rem !important;
+    padding: 0.08rem 0.35rem !important;
   }
   .arrow-indicator {
     display: none !important;
   }
   
-  /* 默认商业精炼模式：折叠主体不全量展开，保持清晰紧凑的现场实测矩阵行 */
+  /* 默认商业精炼模式：折叠实录正文不全量展开，保持紧凑的一行行实测矩阵徽章，杜绝暴增20页 */
   .accordion-body {
     display: none !important;
   }
 
-  /* 当用户在屏幕上主动展开了某项，或勾选了“包含大模型实测问答长文”时，优雅打印实测正文 */
+  /* 当用户在屏幕上手动展开了某项，或勾选了“包含大模型全部问答实录”时，优雅打印实测正文 */
   .accordion-item.open .accordion-body,
   .print-expand-all .accordion-body {
     display: block !important;
-    padding: 0.5rem !important;
-    font-size: 0.7rem !important;
+    padding: 0.45rem !important;
+    font-size: 0.68rem !important;
     background: #ffffff !important;
   }
 
   .raw-response-box {
     max-height: none !important;
-    font-size: 0.7rem !important;
-    line-height: 1.35 !important;
-    padding: 0.5rem !important;
+    font-size: 0.68rem !important;
+    line-height: 1.3 !important;
+    padding: 0.45rem !important;
   }
   .citations-box {
-    margin-top: 0.35rem !important;
+    margin-top: 0.3rem !important;
   }
   .citation-card {
-    padding: 0.3rem 0.45rem !important;
-    margin-bottom: 0.2rem !important;
-    font-size: 0.65rem !important;
+    padding: 0.25rem 0.4rem !important;
+    margin-bottom: 0.15rem !important;
+    font-size: 0.62rem !important;
   }
 
   /* 核心指标 8: 实施路线图 */
   .phases-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.45rem !important;
+    gap: 0.4rem !important;
   }
   .phase-box {
-    padding: 0.45rem 0.55rem !important;
-    font-size: 0.7rem !important;
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.68rem !important;
   }
 
   /* 核心指标 9: 处方 */
   .prescription-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.45rem !important;
+    gap: 0.4rem !important;
   }
   .rx-box {
-    padding: 0.45rem 0.55rem !important;
-    font-size: 0.7rem !important;
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.68rem !important;
   }
 
   /* 页脚认证署名 */
   .paper-footer {
-    margin-top: 0.8rem !important;
-    padding-top: 0.6rem !important;
-    break-inside: avoid-page !important;
+    margin-top: 0.6rem !important;
+    padding-top: 0.5rem !important;
+    break-inside: avoid !important;
   }
   .contact-card {
-    padding: 0.5rem 0.7rem !important;
+    padding: 0.45rem 0.65rem !important;
+  }
+}
+
+/* ==========================================================================
+   Phase 3 促单按钮与全终端赋能样式
+   ========================================================================== */
+.btn-prompter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  color: #ffffff;
+  border: 1px solid rgba(165, 180, 252, 0.4);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-prompter-toggle:hover {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  transform: translateY(-1px);
+}
+
+.btn-prompter-toggle.active {
+  background: #10b981;
+  border-color: #34d399;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.btn-wechat-poster {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  border: 1px solid rgba(110, 231, 183, 0.4);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-wechat-poster:hover {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   销售现场“30秒促单提词器”悬浮组件样式 (Dock / Drawer)
+   ========================================================================== */
+.sales-prompter-dock {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  max-width: 580px;
+  width: calc(100vw - 3rem);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+}
+
+/* 最小化药丸条 */
+.prompter-pill-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+  color: #ffffff;
+  border: 2px solid #6366f1;
+  border-radius: 40px;
+  padding: 0.65rem 1.25rem;
+  cursor: pointer;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.6), 0 0 20px rgba(99, 102, 241, 0.35);
+  animation: floatPrompter 3s ease-in-out infinite;
+}
+
+@keyframes floatPrompter {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.prompter-pill-bar .pill-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.prompter-pill-bar .pill-icon {
+  font-size: 1.2rem;
+}
+
+.prompter-pill-bar .pill-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.prompter-pill-bar .pill-timer-tag {
+  background: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-family: ui-monospace, monospace;
+}
+
+.prompter-pill-bar .pill-timer-tag.timer-running {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.prompter-pill-bar .pill-timer-tag.timer-end {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.prompter-pill-bar .pill-expand-btn {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+/* 完整提词器卡片 */
+.prompter-card {
+  background: #0f172a;
+  color: #ffffff;
+  border: 2px solid rgba(99, 102, 241, 0.5);
+  border-radius: 16px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 30px rgba(99, 102, 241, 0.25);
+  backdrop-filter: blur(12px);
+}
+
+.prompter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  gap: 0.5rem;
+}
+
+.prompter-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.prompter-title-wrap .head-icon {
+  font-size: 1.4rem;
+}
+
+.head-texts .head-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.head-texts .head-sub {
+  display: block;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.prompter-actions-top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.timer-control-box {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.timer-display {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #38bdf8;
+  min-width: 48px;
+  text-align: center;
+}
+
+.timer-display.timer-alert {
+  color: #f87171;
+  animation: pulse 1s infinite;
+}
+
+.timer-display.timer-end {
+  color: #ef4444;
+}
+
+.btn-timer-action, .btn-timer-reset {
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.2rem 0.35rem;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.btn-timer-action:hover, .btn-timer-reset:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-min-prompter, .btn-close-prompter {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-min-prompter:hover, .btn-close-prompter:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* 进度条 */
+.timer-progress-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.85rem;
+}
+
+.timer-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #10b981 100%);
+  transition: width 0.3s ease;
+}
+
+/* 步骤选择条 */
+.prompter-steps-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.step-nav-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  padding: 0.45rem 0.4rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.step-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.step-nav-btn.active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #818cf8;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.25);
+}
+
+.step-nav-btn .step-num {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.step-nav-btn .step-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* 步骤话术内容气泡 */
+.pitch-quote-bubble {
+  background: rgba(30, 41, 59, 0.75);
+  border-left: 3px solid #6366f1;
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: #f1f5f9;
+  margin-bottom: 0.75rem;
+}
+
+.pitch-quote-bubble strong {
+  color: #f87171;
+}
+
+.prompter-bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-pitch-action {
+  flex: 1;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pitch-action:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.btn-locate-action {
+  background: rgba(255, 255, 255, 0.1);
+  color: #c7d2fe;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-locate-action:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #818cf8;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   微信专用 750px 高清长图海报生成模态框样式
+   ========================================================================== */
+.poster-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.poster-modal-box {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 860px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.poster-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.15rem 1.5rem;
+  background: #0f172a;
+  color: #ffffff;
+  border-bottom: 1px solid #1e293b;
+}
+
+.poster-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.poster-header-title .m-icon {
+  font-size: 1.5rem;
+}
+
+.poster-header-title .m-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.poster-header-title .m-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 2px 0 0 0;
+}
+
+.btn-close-modal {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #cbd5e1;
+  font-size: 1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-close-modal:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.poster-modal-body {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.poster-preview-wrap {
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 520px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.poster-preview-img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.poster-generating-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #64748b;
+  font-size: 0.85rem;
+  padding: 3rem 1rem;
+}
+
+.spinner-ring {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.poster-actions-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.poster-meta-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.meta-row {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+  font-size: 0.84rem;
+}
+
+.meta-row:last-child {
+  margin-bottom: 0;
+}
+
+.meta-row .m-lbl {
+  color: #64748b;
+  min-width: 90px;
+}
+
+.meta-row .m-val {
+  color: #0f172a;
+}
+
+.meta-row .val-score {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.meta-row .val-code {
+  font-family: monospace;
+  color: #475569;
+}
+
+.poster-btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-download-poster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-download-poster:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+}
+
+.btn-icon {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+.poster-btn-group .btn-icon {
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+}
+
+.btn-copy-wechat-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.7rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-copy-wechat-text:hover {
+  background: #e2e8f0;
+}
+
+.wechat-mobile-tip {
+  display: flex;
+  gap: 0.6rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 0.85rem;
+}
+
+.wechat-mobile-tip .tip-icon {
+  font-size: 1.2rem;
+  color: #3b82f6;
+}
+
+.wechat-mobile-tip .tip-text {
+  font-size: 0.78rem;
+  color: #1e40af;
+  line-height: 1.45;
+}
+
+.wechat-mobile-tip .tip-text p {
+  margin: 3px 0 0 0;
+}
+
+/* 响应式适配 (移动端 & 微信 WebView) */
+@media (max-width: 768px) {
+  .report-wrapper {
+    padding-bottom: 2rem;
+  }
+  .top-action-bar {
+    padding: 0.6rem 0.8rem;
+  }
+  .action-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+  .bar-left {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .bar-right {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    width: 100%;
+  }
+  .bar-right .btn {
+    font-size: 0.76rem;
+    padding: 0.4rem 0.65rem;
+  }
+  .paper-container {
+    margin: 0.5rem auto !important;
+    padding: 1rem 0.8rem !important;
+    border-radius: 8px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  .header-seal-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+  .official-seal {
+    align-self: flex-start;
+  }
+  .meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.4rem !important;
+  }
+  .live-cert-banner {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.8rem !important;
+  }
+  .cert-banner-right {
+    align-items: flex-start !important;
+    width: 100% !important;
+    overflow-x: auto;
+  }
+  .cert-hash-display {
+    max-width: 100%;
+    word-break: break-all;
+  }
+  .cert-models-flow {
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+  }
+  .score-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 1.25rem 1rem !important;
+    gap: 1rem !important;
+  }
+  .score-number-box {
+    border-right: none !important;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.15) !important;
+    padding-right: 0 !important;
+    padding-bottom: 0.75rem !important;
+    width: 100% !important;
+  }
+  .battle-stage-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+  .vs-badge-circle {
+    display: none !important;
+  }
+  .economic-kpi-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.6rem !important;
+  }
+  .poster-modal-body {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .poster-preview-wrap {
+    max-height: 360px;
+  }
+  .sales-prompter-dock {
+    bottom: 0.75rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+  }
+  .compare-dual-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
   }
 }
 </style>

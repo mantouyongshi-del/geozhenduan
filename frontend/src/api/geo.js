@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE,
@@ -41,8 +41,18 @@ export default {
   getRecentDiagnostics() {
     return apiClient.get('/diagnostic/recent/list');
   },
+  generateIntentQueries(payload) {
+    return apiClient.post('/diagnostic/generate_queries', payload);
+  },
+  getModelsBalance() {
+    return apiClient.get('/diagnostic/models/balance');
+  },
   clearRecentDiagnostics() {
-    return apiClient.delete('/diagnostic/recent/clear');
+    return apiClient.delete('/diagnostic/recent/clear', {
+      headers: {
+        'X-Console-Token': 'xunling-console-secure-access-2026'
+      }
+    });
   },
 
   // 基础管理接口

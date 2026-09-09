@@ -1,7 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import HomeLanding from '../views/HomeLanding.vue';
-import AiReport from '../views/AiReport.vue';
-import DiagnosticReport from '../views/DiagnosticReport.vue';
+
+const HomeLanding = () => import('../views/HomeLanding.vue');
+const AiReport = () => import('../views/AiReport.vue');
+const DiagnosticReport = () => import('../views/DiagnosticReport.vue');
 
 const routes = [
   {

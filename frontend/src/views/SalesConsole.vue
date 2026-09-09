@@ -14,7 +14,7 @@
             </div>
             <div class="system-status-indicator">
               <span class="status-dot-pulse"></span>
-              <span class="status-label">官方五大基座大模型实时探针在线 (PC/移动全域穿透)</span>
+              <span class="status-label">官方六大基座大模型实时探针在线 (PC/移动全域穿透)</span>
             </div>
           </div>
         </div>
@@ -106,7 +106,7 @@
     <main class="console-body">
       <!-- TAB 1: 准客户现场实测 -->
       <section v-show="currentTab === 'diagnostic'" class="tab-content-panel">
-        <!-- 官方大模型五大矩阵徽章墙 (无 Emoji，纯矢量现代工业感) -->
+        <!-- 官方大模型六大矩阵徽章墙 (无 Emoji，纯矢量现代工业感) -->
         <div class="models-matrix-grid">
           <div class="model-engine-card doubao">
             <div class="engine-header">
@@ -152,6 +152,25 @@
             <div class="engine-status-row">
               <span class="engine-dot-active"></span>
               <span class="engine-status-text">已连通 340ms</span>
+            </div>
+          </div>
+
+          <div class="model-engine-card kimi">
+            <div class="engine-header">
+              <div class="engine-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+              </div>
+              <div class="engine-names">
+                <span class="engine-brand">月之暗面 · Kimi</span>
+                <span class="engine-tag">Moonshot 开放平台直连</span>
+              </div>
+            </div>
+            <div class="engine-desc">长文本精读与行业万字研报公信力考证中心</div>
+            <div class="engine-status-row">
+              <span class="engine-dot-active"></span>
+              <span class="engine-status-text">已连通 160ms</span>
             </div>
           </div>
 
@@ -222,7 +241,7 @@
             <div class="card-header-flex">
               <div class="card-title-wrap">
                 <h2 class="card-main-title">录入准客户实测参数</h2>
-                <p class="card-sub-title">用于现场针对目标企业开展 5 大基座大模型实时真机穿透与竞品截流测评</p>
+                <p class="card-sub-title">用于现场针对目标企业开展 6 大基座大模型实时真机穿透与竞品截流测评</p>
               </div>
               <button type="button" class="btn-clear-form" @click="resetForm">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -327,15 +346,54 @@
                     <span>{{ isGeneratingKws ? '正在根据 GEO 决策意图模型生成...' : '基于 GEO 意图模型一键生成高频词' }}</span>
                   </button>
                 </div>
+                <!-- 城市拓展意图深度状态条与区县快速带入胶囊 -->
+                <div class="geo-intent-box" :class="geoIntentInfo.isNational ? 'is-national' : 'is-regional'">
+                  <div class="intent-meta-row">
+                    <div class="intent-badge-pill" :class="geoIntentInfo.isNational ? 'pill-national' : 'pill-regional'">
+                      <svg v-if="geoIntentInfo.isNational" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="intent-icon">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                      <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="intent-icon">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                      <span>{{ geoIntentInfo.modeLabel }}</span>
+                    </div>
+                    <div class="intent-desc-text">
+                      {{ geoIntentInfo.modeDesc }}
+                    </div>
+                  </div>
+
+                  <!-- 如果属于区域城市且有下辖区县，展示快速胶囊列表 -->
+                  <div class="district-capsules-wrap" v-if="!geoIntentInfo.isNational && geoIntentInfo.districts && geoIntentInfo.districts.length > 0">
+                    <span class="capsules-tip">点击带入区县下沉词:</span>
+                    <div class="capsules-scroll">
+                      <button
+                        type="button"
+                        v-for="dist in geoIntentInfo.districts"
+                        :key="dist"
+                        class="capsule-btn"
+                        @click="appendDistrictKeyword(dist)"
+                        :title="`点击将【${dist}】精准截流词追加至下方测试列表`"
+                      >
+                        <span class="capsule-plus">+</span>
+                        <span>{{ dist }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <textarea 
                   v-model="keywordsStr" 
                   rows="4" 
                   required
-                  placeholder="例如:&#10;无锡激光切管机生产厂家推荐哪家性价比高&#10;数控光纤激光切割机十大知名品牌实力排名&#10;工业激光切割设备采购避坑选型指南与真实评测"
+                  placeholder="例如:&#10;全国十大知名激光切管机品牌实力横评对比&#10;激光切管机全国源头生产厂家直供批量采购评测&#10;采购激光切管机全国源头厂家直采避坑选型指南与真实ROI"
                   class="form-textarea"
                 ></textarea>
                 <div class="form-hint-text">
-                  提示：实测词应贴合 B 端或 C 端终端决策者在 AI 搜索中的真实自然语言提问习惯（含「哪家好」、「品牌排名」、「避坑指南」等金三角词型）。
+                  建议保留 3~5 组高转化意图词。在全国模式下聚焦头部实力横评、源头供应链直采与招商加盟ROI；在城市模式下向下穿透区县，实现全域拦截。
                 </div>
               </div>
 
@@ -349,7 +407,7 @@
                   <svg class="submit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>
                   </svg>
-                  <span class="submit-text">启动 5 大基座大模型现场穿透探测 · 现场出具诊断书</span>
+                  <span class="submit-text">启动 6 大基座大模型现场穿透探测 · 现场出具诊断书</span>
                 </button>
               </div>
             </form>
@@ -359,30 +417,6 @@
           <div class="console-sidebar-col">
             <!-- 顾问认证卡片 -->
             <div class="console-card consultant-card">
-              <div class="c-card-top">
-                <div class="c-avatar-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                  </svg>
-                </div>
-                <div class="c-detail">
-                  <div class="c-name-row">
-                    <span class="c-main-name">{{ form.consultant_name }}</span>
-                    <span class="c-tag-badge">认证顾问</span>
-                  </div>
-                  <div class="c-sub">{{ form.agency_name }}</div>
-                  <div class="c-tel">联系电话: {{ form.consultant_phone }}</div>
-                </div>
-              </div>
-              <div class="c-card-actions">
-                <button type="button" class="btn-config-c" @click="openConsultantModal">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                  </svg>
-                  修改顾问署名与服务中心
-                </button>
               </div>
             </div>
 
@@ -431,7 +465,7 @@
             <div class="leads-title-col">
               <h2 class="leads-title">官网访客 1v1 预约线索池</h2>
               <p class="leads-sub">
-                公网访客在品牌官网提交的企业预约信息自动同步至此。点击「一键带入现场实测」即可直接调用 5 大基座大模型开展实测出单！
+                公网访客在品牌官网提交的企业预约信息自动同步至此。点击「一键带入现场实测」即可直接调用 6 大基座大模型开展实测出单！
               </p>
             </div>
             <div class="leads-action-btns">
@@ -685,7 +719,7 @@
           </div>
           
           <h3 class="radar-title">正在全网穿透探测中...</h3>
-          <p class="radar-sub">已连接 字节跳动·豆包 · 深度求索·DeepSeek · 阿里巴巴·千问 · 腾讯元宝 · 百度搜索</p>
+          <p class="radar-sub">已连接 字节跳动·豆包 · 深度求索·DeepSeek · 月之暗面·Kimi · 阿里巴巴·千问 · 腾讯元宝 · 百度搜索</p>
           <div class="radar-timer">已探测：{{ elapsedSeconds }} 秒 (全流程预计 12~15 秒)</div>
 
           <!-- 5 步递进式流水线 -->
@@ -779,9 +813,15 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import geoApi from '../api/geo';
+import {
+  resolveCityAndDistricts,
+  generateMultiTierKeywords,
+  generateSingleDistrictKeyword,
+  cleanIndustryToCategory
+} from '../utils/geoDistricts';
 
 const router = useRouter();
 const route = useRoute();
@@ -796,6 +836,11 @@ const form = ref({
   agency_name: '蜉蝣小宝 · 官方直营授权运营中心',
   consultant_name: '金牌数字化营销顾问',
   consultant_phone: '138-0000-8888'
+});
+
+// 动态解析城市意图深度与下辖区县拓扑
+const geoIntentInfo = computed(() => {
+  return resolveCityAndDistricts(form.value.city);
 });
 
 const keywordsStr = ref('');
@@ -816,19 +861,35 @@ let timerInterval = null;
 const radarSteps = [
   { label: '向公网权威知识库发起全网实时探针检索与索引召回' },
   { label: '穿透 字节跳动·豆包 手机端生态，动态召回全网及抖音生活圈公域信源' },
-  { label: '连线 DeepSeek 深度推理引擎核验公信力资产与背书' },
-  { label: '穿透 阿里千问 & 腾讯元宝 知识图谱，萃取竞品霸屏实体' },
+  { label: '连线 DeepSeek & Kimi 深度推理与长文本引擎核验公信力研报与背书' },
+  { label: '穿透 阿里千问 & 腾讯元宝 & 百度 知识图谱，萃取竞品霸屏实体' },
   { label: '计算 GEO 四层渗透漏斗与商业经济流失模型' }
 ];
 
 const industryTemplates = [
+  {
+    name: '全国战略 (全国)',
+    industry: '工业数控激光切管机制造',
+    city: '全国',
+    company: '广东大族光电智能装备股份有限公司',
+    brand: '大族激光',
+    keywords: '全国十大知名激光切管机品牌实力横评对比\n激光切管机全国源头生产厂家直供批量采购评测\n采购激光切管机全国源头厂家直采避坑选型指南与真实ROI'
+  },
+  {
+    name: '少儿科创 (怀化)',
+    industry: '少儿机器人编程培训',
+    city: '怀化',
+    company: '怀化博创智汇科教文化有限公司',
+    brand: '博创少儿机器人',
+    keywords: '怀化鹤城区正规少儿机器人编程机构哪家口碑好校区大\n中方县及周边到怀化选少儿机器人编程优质机构综合实力排行榜\n洪江市及怀化周边学少儿机器人编程收费价格明细与避坑选课指南'
+  },
   {
     name: '智能制造 (无锡)',
     industry: '工业数控激光切管机制造',
     city: '无锡',
     company: '无锡恒瑞智能装备科技有限公司',
     brand: '恒瑞智能装备',
-    keywords: '无锡激光切管机厂家哪家好推荐\n激光切管机十大知名品牌实力排名\n采购激光切管机避坑选型指南与评测'
+    keywords: '无锡梁溪区激光切管机实体厂家哪家口碑好实力强\n锡山区及周边去无锡选激光切管机知名品牌综合实力排名\n惠山区及无锡周边采购激光切管机收费价格与避坑选型指南'
   },
   {
     name: '系统门窗 (佛山)',
@@ -836,7 +897,7 @@ const industryTemplates = [
     city: '佛山',
     company: '佛山尚品佳豪智能家居系统有限公司',
     brand: '佳豪系统门窗',
-    keywords: '佛山系统门窗厂家哪家好推荐\n系统门窗十大知名品牌实力排名\n采购系统门窗避坑选型指南与评测'
+    keywords: '佛山禅城区系统门窗实体厂家哪家口碑好实力强\n南海区及周边去佛山选系统门窗知名品牌综合实力排名\n顺德区及佛山周边采购系统门窗收费价格与避坑选型指南'
   },
   {
     name: '专科医疗 (杭州)',
@@ -844,7 +905,7 @@ const industryTemplates = [
     city: '杭州',
     company: '杭州美莱数字化口腔门诊连锁有限公司',
     brand: '美莱齿科',
-    keywords: '杭州种植牙正规医院哪家口碑好\n杭州种植牙知名专科排名前三\n种植牙价格收费明细与真实避坑指南'
+    keywords: '杭州上城区正规种植牙哪家口碑好技术强\n拱墅区及周边去杭州看种植牙知名专科实力排名\n西湖区及杭州本地做种植牙真实收费价格与避坑指南'
   },
   {
     name: '商务律所 (广州)',
@@ -852,7 +913,7 @@ const industryTemplates = [
     city: '广州',
     company: '广东中律律师事务所',
     brand: '中律律所',
-    keywords: '广州专业企业常年法律顾问团队推荐\n广州处理商事合同经济纠纷知名律所排名\n企业聘请法律顾问收费标准与避坑'
+    keywords: '广州天河区专业企业常年法律顾问团队哪家口碑好信誉高\n番禺区及周边到广州选企业常年法律顾问知名律师团队排名\n海珠区及广州企业聘请企业常年法律顾问收费标准与避坑手册'
   },
   {
     name: '资质申报 (深圳)',
@@ -860,7 +921,7 @@ const industryTemplates = [
     city: '深圳',
     company: '深圳市知远科创知识产权服务有限公司',
     brand: '知远科创',
-    keywords: '深圳高新企业认定专业代办哪家成功率高\n深圳高新企业认定服务机构实力综合排名\n深圳申报高新企业认定补贴条件与审核避坑指南'
+    keywords: '深圳南山区高新企业认定专业代办哪家通过率高口碑好\n福田区及周边委托深圳高新企业认定服务机构实力综合排名\n宝安区及深圳申报高新企业认定补贴政策与审核避坑指南'
   }
 ];
 
@@ -893,113 +954,38 @@ function resetForm() {
   keywordsStr.value = '';
 }
 
-// 行业描述自然语言品类净化引擎 (提纯核心品类词，剔除公文式冗余)
-function cleanIndustryToCategory(industry) {
-  if (!industry) return '行业服务';
-  const ind = industry.trim();
-  
-  if (/切管|激光切割|激光切管/.test(ind)) return '激光切管机';
-  if (/光纤激光|激光焊接|激光设备/.test(ind)) return '激光切割设备';
-  if (/机床|数控机床|加工中心/.test(ind)) return '数控机床';
-  if (/注塑|模具/.test(ind)) return '注塑模具';
-  if (/除尘|废气|环保设备/.test(ind)) return '工业环保设备';
-  if (/自动化|机械手|工业机器人/.test(ind)) return '自动化设备';
-  
-  if (/系统门窗|断桥铝|门窗/.test(ind)) return '系统门窗';
-  if (/阳光房/.test(ind)) return '高端阳光房';
-  if (/全屋定制|定制家居|衣柜|橱柜/.test(ind)) return '全屋定制';
-  
-  if (/种植牙|种植/.test(ind)) return '种植牙';
-  if (/正畸|牙齿矫正|隐形矫正/.test(ind)) return '隐形牙齿矫正';
-  if (/齿科|口腔|牙科/.test(ind)) return '口腔专科';
-  if (/医美|整形|抗衰|轻医美/.test(ind)) return '医疗美容';
-  if (/眼科|近视|全飞秒/.test(ind)) return '近视手术';
-  
-  if (/常年法律顾问|法律顾问/.test(ind)) return '企业常年法律顾问';
-  if (/商事|合同纠纷|律所|律师/.test(ind)) return '商事合同律师';
-  if (/高新技术企业|高企|高新/.test(ind)) return '高新企业认定';
-  if (/专精特新/.test(ind)) return '专精特新申报';
-  if (/知识产权|专利|商标/.test(ind)) return '专利申报代理';
-  
-  if (/机器人/.test(ind)) return '少儿机器人编程';
-  if (/科创/.test(ind)) return '少儿科创培训';
-  if (/少儿编程|编程/.test(ind)) return '少儿编程';
-  if (/考研|留学|雅思|托福/.test(ind)) return '考研辅导';
-  if (/职业培训|技能培训|考证/.test(ind)) return '职业技能培训';
-  
-  const cleaned = ind
-    .replace(/(制造|生产|加工|研发|批发|零售|销售|服务|系统|工程|连锁|机构|有限责任公司|有限公司|门诊部|事务所|中心)$/g, '')
-    .replace(/^(工业|高端|专业|数字化|微创|知名|优质|常年|国家|合规)/g, '')
-    .trim();
-    
-  return cleaned.length >= 2 ? cleaned : ind;
-}
-
-// 智能生成核心高频截流词（基于真实用户搜索心理与 GEO 决策金三角意图体系）
+// 智能生成核心高频截流词（基于 GEO 城市拓展意图深度引擎）
 function generateSmartKeywords() {
-  const ind = form.value.industry.trim() || '本行业服务';
-  const city = (form.value.city && form.value.city.trim() !== '全国') ? form.value.city.trim() : '';
-  const cat = cleanIndustryToCategory(ind);
-  const cPrefix = (city && !cat.includes(city)) ? city : '';
-
   isGeneratingKws.value = true;
   setTimeout(() => {
-    const isHardware = /切管机|切割机|切割设备|机床|机械|设备|模具|门窗|阳光房|全屋定制|五金/.test(cat);
-    const isMedical = /种植牙|矫正|口腔|眼科|手术|医美|美容|门诊/.test(cat);
-    const isLegal = /法律顾问|律师|商事|纠纷|法务/.test(cat);
-    const isQual = /高企|高新|专精特新|申报|认定|专利/.test(cat);
-    const isEdu = /编程|考研|辅导|培训|教育/.test(cat);
-
-    let k1 = '', k2 = '', k3 = '';
-
-    // 意图 1: 真实买家找源头/口碑服务商 (11~14字，高频首搜词)
-    if (isHardware) {
-      k1 = `${cPrefix}${cat}厂家哪家好推荐`;
-    } else if (isMedical) {
-      k1 = `${cPrefix}${cat}正规医院哪家口碑好`;
-    } else if (isLegal) {
-      k1 = `${cPrefix}专业${cat}团队哪家口碑好`;
-    } else if (isQual) {
-      k1 = `${cPrefix}${cat}专业代办哪家成功率高`;
-    } else if (isEdu) {
-      k1 = `${cPrefix}正规${cat}机构哪家口碑好`;
-    } else {
-      k1 = `${cPrefix}${cat}哪家口碑好推荐`;
-    }
-
-    // 意图 2: 老板与决策层横向对比排行榜 (11~14字，同行必抢权威词)
-    if (isHardware) {
-      k2 = `${cat}十大知名品牌实力排名`;
-    } else if (isMedical) {
-      k2 = `${cPrefix}${cat}知名专科排名前三`;
-    } else if (isLegal) {
-      k2 = `${cPrefix}处理商事合同经济纠纷知名律所排名`;
-    } else if (isQual) {
-      k2 = `${cPrefix}${cat}服务机构实力综合排名`;
-    } else if (isEdu) {
-      k2 = `${cPrefix}${cat}知名品牌实力综合排名榜`;
-    } else {
-      k2 = `${cPrefix}${cat}知名品牌综合实力排行榜`;
-    }
-
-    // 意图 3: 临门一脚预算审核防踩坑指南 (12~15字，最具现场说服力)
-    if (isHardware) {
-      k3 = `采购${cat}避坑选型指南与评测`;
-    } else if (isMedical) {
-      k3 = `${cat}价格收费明细与真实避坑指南`;
-    } else if (isLegal) {
-      k3 = `企业聘请法律顾问收费标准与避坑`;
-    } else if (isQual) {
-      k3 = `${cPrefix}申报${cat}补贴条件与审核避坑指南`;
-    } else if (isEdu) {
-      k3 = `${cat}收费价格明细与选课避坑指南`;
-    } else {
-      k3 = `选购${cat}避雷指南与真实评测`;
-    }
-
-    keywordsStr.value = [k1, k2, k3].join('\n');
+    const kws = generateMultiTierKeywords({
+      city: form.value.city,
+      industry: form.value.industry,
+      brand: form.value.brand_name
+    });
+    keywordsStr.value = kws.join('\n');
     isGeneratingKws.value = false;
-  }, 200);
+  }, 180);
+}
+
+// 点击区县胶囊快速追加下沉定向截流词
+function appendDistrictKeyword(dist) {
+  const kw = generateSingleDistrictKeyword({
+    city: form.value.city,
+    district: dist,
+    industry: form.value.industry,
+    brand: form.value.brand_name
+  });
+  
+  const currentLines = keywordsStr.value
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (!currentLines.includes(kw)) {
+    currentLines.push(kw);
+    keywordsStr.value = currentLines.join('\n');
+  }
 }
 
 // 顾问信息持久化
@@ -1506,11 +1492,11 @@ onUnmounted(() => {
   flex: 1;
 }
 
-/* 官方五大引擎矩阵 */
+/* 官方六大引擎矩阵 */
 .models-matrix-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.85rem;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
 
@@ -1796,6 +1782,117 @@ onUnmounted(() => {
 .btn-smart-keywords svg {
   width: 13px;
   height: 13px;
+}
+
+/* 城市拓展意图深度动态指示与区县带入 */
+.geo-intent-box {
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.45rem;
+  transition: all 0.25s ease;
+}
+
+.geo-intent-box.is-national {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+}
+
+.geo-intent-box.is-regional {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.intent-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.intent-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.intent-badge-pill.pill-national {
+  background: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.45);
+}
+
+.intent-badge-pill.pill-regional {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+}
+
+.intent-badge-pill .intent-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.intent-desc-text {
+  font-size: 0.74rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.district-capsules-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.capsules-tip {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.capsules-scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.capsule-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.capsule-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #6ee7b7;
+  transform: translateY(-1px);
+}
+
+.capsule-plus {
+  font-weight: 800;
+  color: #10b981;
 }
 
 .form-textarea {
@@ -2665,7 +2762,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .models-matrix-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   .form-row-three {
     grid-template-columns: 1fr;

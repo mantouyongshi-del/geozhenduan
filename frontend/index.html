@@ -8,6 +8,20 @@
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      // 智能识别并平滑纠偏非 Hash 路由（防止用户或客户直接输入/粘贴直连 URL 时出现 404 或首页丢失参数）
+      (function() {
+        var p = window.location.pathname;
+        if (p && p !== '/' && p !== '/index.html') {
+          var clean = p.replace(/^\//, '');
+          if (clean === 'console' || clean === 'console.html') {
+            window.location.replace('/console.html' + (window.location.hash || '#/'));
+          } else if (clean.indexOf('diagnostic_report') === 0 || clean.indexOf('ai_report') === 0 || clean.indexOf('diagnostic') === 0) {
+            window.location.replace('/#/' + clean + (window.location.search || ''));
+          }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

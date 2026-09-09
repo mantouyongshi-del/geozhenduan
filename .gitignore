@@ -9,6 +9,8 @@
 !**/.env.example
 *.pem
 *.key
+AI大模型接入配置与鉴权凭据速查手册.md
+*速查手册*.md
 
 # Python
 __pycache__/
@@ -31,6 +33,10 @@ frontend/dist/
 node_modules/
 dist/
 *.log
+
+# Scratch & Local tests
+scratch/
+**/scratch/
 
 # macOS
 .DS_Store
