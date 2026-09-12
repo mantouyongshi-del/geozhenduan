@@ -68,6 +68,13 @@ class Settings:
     DISTRIBUTION_TIMEOUT_S: float = _env_float("DISTRIBUTION_TIMEOUT_S", 5.0)
     DISTRIBUTION_MAX_RETRIES: int = _env_int("DISTRIBUTION_MAX_RETRIES", 3)
 
+    # 上游 02 品牌知识库（事实真理底座）跨仓事实回流对接（M7.1）
+    KNOWLEDGE_API_URL: str = os.getenv("KNOWLEDGE_API_URL", "http://127.0.0.1:8002")
+    KNOWLEDGE_SYNC_ENABLED: bool = _env_bool("KNOWLEDGE_SYNC_ENABLED", True)
+    KNOWLEDGE_SYNC_AUTO: bool = _env_bool("KNOWLEDGE_SYNC_AUTO", True)
+    KNOWLEDGE_SYNC_TIMEOUT_S: float = _env_float("KNOWLEDGE_SYNC_TIMEOUT_S", 5.0)
+    KNOWLEDGE_SYNC_MAX_RETRIES: int = _env_int("KNOWLEDGE_SYNC_MAX_RETRIES", 3)
+
     # 跨仓内部服务预共享令牌 (AGENTS.md 五.4)：本地未配置时默认信任放行
     INTERNAL_SERVICE_SECRET: str = os.getenv("INTERNAL_SERVICE_SECRET", "")
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import company, keyword, audit, report, diagnostic, distribution
+from app.api.v1.endpoints import company, keyword, audit, report, diagnostic, distribution, knowledge_sync
 
 api_router = APIRouter()
 
@@ -9,3 +9,4 @@ api_router.include_router(audit.router, prefix="/audit", tags=["巡检引擎"])
 api_router.include_router(report.router, prefix="/report", tags=["客户报表与数据看板"])
 api_router.include_router(diagnostic.router, prefix="/diagnostic", tags=["准客户售前AI体检引擎"])
 api_router.include_router(distribution.router, prefix="/distribution", tags=["下游内容分发舰队对接"])
+api_router.include_router(knowledge_sync.router, prefix="/knowledge-sync", tags=["上游品牌知识库事实回流"])

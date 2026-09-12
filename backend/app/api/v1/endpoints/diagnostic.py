@@ -15,6 +15,7 @@ from app.schemas.diagnostic import (
 from app.services.diagnostic_service import DiagnosticService
 from app.services.amap_service import AmapService
 from app.services.distribution_client import schedule_auto_dispatch
+from app.services.knowledge_sync_client import schedule_auto_sync
 
 router = APIRouter()
 
@@ -137,6 +138,10 @@ async def run_enterprise_diagnostic(payload: DiagnosticCreateRequest, request: R
             # 体检产出 GeoActionTask 后，自动下发给下游 03 内容分发系统。
             # 走后台任务不阻塞体检报告实时返回，失败静默降级（AGENTS.md 五.3）。
             schedule_auto_dispatch(report_out)
+        if settings.KNOWLEDGE_SYNC_AUTO:
+            # M7.1：体检产出的事实基准库自动回流上游 02 知识库，让后续出稿
+            # 直接拿到官方事实而非兜底语料。同样走后台任务，失败静默降级。
+            schedule_auto_sync(report_out)
         return report_out
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"体检执行异常: {str(e)}")
