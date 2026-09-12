@@ -4,7 +4,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
 
 const apiClient = axios.create({
   baseURL: API_BASE,
-  timeout: 60000,
+  timeout: 120000,
 });
 
 export default {
@@ -31,9 +31,11 @@ export default {
     return apiClient.get('/report/trend', { params: { code, days } });
   },
   
-  // 售前体检引擎接口 (核心拓客开单)
+  // 售前体检引擎接口 (核心拓客开单，多大模型全网深度探测耗时较长，专属放宽至 180s)
   runDiagnostic(payload) {
-    return apiClient.post('/diagnostic/run', payload);
+    return apiClient.post('/diagnostic/run', payload, {
+      timeout: 180000
+    });
   },
   getDiagnosticReport(code) {
     return apiClient.get(`/diagnostic/${code}`);
@@ -42,7 +44,9 @@ export default {
     return apiClient.get('/diagnostic/recent/list');
   },
   generateIntentQueries(payload) {
-    return apiClient.post('/diagnostic/generate_queries', payload);
+    return apiClient.post('/diagnostic/generate_queries', payload, {
+      timeout: 120000
+    });
   },
   getModelsBalance() {
     return apiClient.get('/diagnostic/models/balance');

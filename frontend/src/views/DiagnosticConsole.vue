@@ -1202,7 +1202,28 @@ async function handleStartDiagnostic() {
       query: { code: res.data.report_code }
     });
   } catch (err) {
-    alert('体检执行失败: ' + (err.response?.data?.detail || err.message));
+    // 自动重查防呆兜底：如果前端发生网络超时，但后端已在后台完成生成并写入历史库
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      const historyRes = await geoApi.getRecentDiagnostics();
+      const targetCmp = form.value.target_company.trim();
+      const found = (historyRes.data || []).find(item => item.target_company === targetCmp);
+      if (found && found.report_code) {
+        router.push({
+          path: '/diagnostic_report',
+          query: { code: found.report_code }
+        });
+        return;
+      }
+    } catch (_) {}
+
+    const errMsg = err.response?.data?.detail || err.message;
+    if (errMsg && errMsg.includes('timeout')) {
+      alert('体检探测提示：由于 6 大大模型全网深度探针与实时语义裁判计算量较大，后端可能正在完成生成。您可在下方历史记录中查看，或稍候重试。');
+      loadHistory();
+    } else {
+      alert('体检执行失败: ' + errMsg);
+    }
   } finally {
     isRunning.value = false;
     stopRadarTimer();

@@ -47,7 +47,7 @@ class BaiduAdapter(BaseModelAdapter):
         }
 
         try:
-            async with httpx.AsyncClient(trust_env=False, timeout=35.0) as client:
+            async with httpx.AsyncClient(trust_env=False, timeout=20.0) as client:
                 resp = await client.post(self.api_url, headers=headers, json=payload)
                 latency = int((time.time() - start_t) * 1000)
                 if resp.status_code == 200:
