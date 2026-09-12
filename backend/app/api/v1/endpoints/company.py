@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from app.core.database import get_db
 from app.core.security import generate_share_token
+from app.core.uscc import validate_or_none
 from app.models.company import Company
 from app.models.keyword import Keyword
 from app.models.audit import AuditRecord, MatchSnapshot
@@ -24,6 +25,14 @@ class QuickAuditRequest(BaseModel):
     brand_aliases: Optional[str] = None
     industry: Optional[str] = "科技服务"
     custom_keywords: Optional[List[str]] = None
+    uscc: Optional[str] = None
+
+def _validated_uscc(value: Optional[str]) -> Optional[str]:
+    """统一校验入口：合法返回归一化值，未填写返回 None，格式错误返回 422。"""
+    try:
+        return validate_or_none(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 @router.post("/quick-audit")
 async def quick_audit_brand(payload: QuickAuditRequest, db: Session = Depends(get_db)):
@@ -38,7 +47,8 @@ async def quick_audit_brand(payload: QuickAuditRequest, db: Session = Depends(ge
         name=payload.name,
         short_name=s_name,
         industry=payload.industry,
-        brand_aliases=aliases_str
+        brand_aliases=aliases_str,
+        uscc=_validated_uscc(payload.uscc),
     )
     db.add(company)
     db.commit()
@@ -155,7 +165,8 @@ def create_company(payload: CompanyCreate, db: Session = Depends(get_db)):
         short_name=payload.short_name,
         logo_url=payload.logo_url,
         industry=payload.industry,
-        brand_aliases=payload.brand_aliases
+        brand_aliases=payload.brand_aliases,
+        uscc=_validated_uscc(payload.uscc),
     )
     db.add(company)
     db.commit()
@@ -192,6 +203,9 @@ def update_company(company_id: int, payload: CompanyUpdate, db: Session = Depend
     
     for field, val in payload.dict(exclude_unset=True).items():
         setattr(company, field, val)
+    # USCC 是跨仓全局主键，更新同样要过校验（exclude_unset 可能带入脏值）
+    if "uscc" in payload.dict(exclude_unset=True):
+        company.uscc = _validated_uscc(payload.uscc)
     db.commit()
     db.refresh(company)
     co = CompanyOut.from_orm(company)

@@ -5,7 +5,7 @@
 设计红线（对齐 AGENTS.md）：
 - 五.3 优雅降级：任何网络异常、非 2xx、契约异常都绝不向上抛，统一收敛为结构化结果；
 - 五.4 内部令牌：请求头附加 `X-Internal-Token`（仅在密钥非空时），本地联调默认信任放行；
-- 五.1 全局主键：优先 USCC，01 侧暂无该字段时降级为 `{企业全称}::{城市}`。
+- 五.1 全局主键：显式 USCC > 报告档案 USCC > 降级 `{企业全称}::{城市}`。
 """
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set
 import httpx
 
 from app.core.config import settings
+from app.core.uscc import is_uscc_format
 from app.schemas.distribution import (
     DispatchBatchResult,
     DispatchTaskResult,
@@ -185,10 +186,18 @@ class DistributionClient:
             wanted = set(task_ids)
             tasks = [t for t in tasks if getattr(t, "id", None) in wanted]
 
+        # 主键优先级：调用方显式指定 > 报告档案上的 USCC > 降级 `{企业全称}::{城市}`。
+        # 第二级是生产能真正带上官方主键的关键 —— 缺了它，一切下发都会退化为降级键，
+        # 下游拿降级键查知识库必查不到，只能走兜底语料（AGENTS.md 五.1/红线 2）。
+        explicit = (brand_id or "").strip() or None
+        if explicit is None:
+            report_uscc = getattr(report, "uscc", None)
+            if report_uscc and is_uscc_format(str(report_uscc).strip().upper()):
+                explicit = str(report_uscc).strip().upper()
         resolved_brand_id = self.build_brand_id(
             getattr(report, "target_company", "") or getattr(report, "brand_name", ""),
             getattr(report, "city", "") or "",
-            explicit=brand_id,
+            explicit=explicit,
         )
         batch = DispatchBatchResult(
             report_code=getattr(report, "report_code", "") or "",

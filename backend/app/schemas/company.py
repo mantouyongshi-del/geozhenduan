@@ -7,6 +7,7 @@ class CompanyBase(BaseModel):
     logo_url: Optional[str] = None
     industry: Optional[str] = None
     brand_aliases: str
+    uscc: Optional[str] = None
 
 class CompanyCreate(CompanyBase):
     pass
@@ -17,6 +18,7 @@ class CompanyUpdate(BaseModel):
     logo_url: Optional[str] = None
     industry: Optional[str] = None
     brand_aliases: Optional[str] = None
+    uscc: Optional[str] = None
     is_active: Optional[bool] = None
 
 class CompanyOut(CompanyBase):

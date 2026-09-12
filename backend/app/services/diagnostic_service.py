@@ -10,6 +10,7 @@ import hashlib
 from typing import List, Dict, Any, Tuple, Optional
 from sqlalchemy.orm import Session
 from app.core.config import settings
+from app.core.uscc import validate_or_none
 from app.models.diagnostic import DiagnosticReport, DiagnosticItem
 from app.schemas.diagnostic import (
     DiagnosticCreateRequest, DiagnosticReportOut, DiagnosticItemOut,
@@ -1228,12 +1229,18 @@ class DiagnosticService:
         ]
 
         # 7. 存储报告
+        #    统一社会信用代码：跨仓下发的全局实体主键。校验不通过时返回 422，
+        #    绝不写入脏数据 —— 一个校验位错误的 USCC 会让下游拿它去查知识库而查不到，
+        #    静默退化为兜底语料，比"干脆不填"更隐蔽、更难排查。
+        uscc_value = validate_or_none(getattr(payload, "uscc", None))
+
         report = DiagnosticReport(
             report_code=report_code,
             target_company=payload.target_company,
             brand_name=payload.brand_name,
             industry=payload.industry,
             city=payload.city or "全国",
+            uscc=uscc_value,
             search_keywords_json=json.dumps(payload.keywords, ensure_ascii=False),
             agency_name=payload.agency_name or "蜉蝣小宝 · 官方直营授权运营中心",
             consultant_name=payload.consultant_name or "资深数字化营销顾问",
@@ -2149,6 +2156,7 @@ class DiagnosticService:
             brand_name=report.brand_name,
             industry=report.industry,
             city=report.city,
+            uscc=getattr(report, "uscc", None),
             search_keywords=keywords,
             agency_name=report.agency_name,
             consultant_name=report.consultant_name,

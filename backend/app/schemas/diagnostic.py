@@ -6,6 +6,9 @@ class DiagnosticCreateRequest(BaseModel):
     brand_name: str
     industry: str
     city: Optional[str] = "全国"
+    # 统一社会信用代码：填写后将成为跨仓工单下发的全局实体主键（AGENTS.md 五.1）。
+    # 不填则下游降级为 `{企业全称}::{城市}`，检索不到官方事实而走兜底语料。
+    uscc: Optional[str] = None
     keywords: List[str]
     agency_name: Optional[str] = "蜉蝣小宝 · 官方直营授权运营中心"
     consultant_name: Optional[str] = "资深数字化营销顾问"
@@ -188,6 +191,7 @@ class DiagnosticReportOut(BaseModel):
     brand_name: str
     industry: str
     city: str
+    uscc: Optional[str] = None
     search_keywords: List[str]
     agency_name: str
     consultant_name: str

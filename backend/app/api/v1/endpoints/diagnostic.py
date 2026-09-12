@@ -6,6 +6,7 @@ import time
 from collections import defaultdict
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.uscc import validate_or_none
 from app.models.diagnostic import DiagnosticReport
 from app.schemas.diagnostic import (
     DiagnosticCreateRequest, DiagnosticReportOut,
@@ -120,6 +121,15 @@ async def run_enterprise_diagnostic(payload: DiagnosticCreateRequest, request: R
     if len(payload.keywords) > 8:
         raise HTTPException(status_code=400, detail="单次体检关键词不能超过8个")
 
+    # 统一社会信用代码：可选字段，但"填了就必须对"。
+    # 必须在 try 之前校验 —— 下面的兜底会把一切异常吞成 500，
+    # 而格式错误是可修正的客户端输入问题，必须返回 422 让前端明确提示。
+    try:
+        uscc_value = validate_or_none(payload.uscc)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    payload.uscc = uscc_value
+
     try:
         report = await DiagnosticService.execute_diagnostic(payload, db)
         report_out = DiagnosticService.get_report_by_code(report.report_code, db)
@@ -230,6 +240,7 @@ def list_recent_diagnostics(
             "target_company": r.target_company,
             "brand_name": r.brand_name,
             "industry": r.industry,
+            "uscc": getattr(r, "uscc", None),
             "visibility_score": r.visibility_score,
             "risk_level": r.risk_level,
             "created_at": r.created_at,
