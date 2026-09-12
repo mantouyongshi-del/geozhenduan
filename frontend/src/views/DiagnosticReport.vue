@@ -980,6 +980,7 @@
             class="geo-task-card"
             :class="'priority-' + (task.priority || 'P1').toLowerCase()"
           >
+            <!-- 头部：优先级 + 分类 + 落地期限 -->
             <div class="task-card-header">
               <div class="task-priority-badge" :class="'badge-' + (task.priority || 'P1').toLowerCase()">
                 <span v-if="task.priority === 'P0'">🚨 P0 紧急止血</span>
@@ -992,19 +993,83 @@
               </div>
             </div>
 
+            <!-- 任务核心主旨 -->
             <h3 class="task-title">{{ task.title }}</h3>
-            
-            <div class="task-action-box">
-              <strong>🎯 执行建议：</strong>{{ task.action }}
+
+            <!-- 推荐发布阵地具体清单 -->
+            <div class="task-platforms-block">
+              <div class="block-label">
+                <span class="lbl-icon">🌐</span>
+                <span>推荐发布阵地清单：</span>
+              </div>
+              <div class="platform-badges-wrap">
+                <span 
+                  v-for="(plat, pIdx) in getTaskPlatforms(task)" 
+                  :key="pIdx"
+                  class="platform-badge"
+                  :class="getPlatformBadgeClass(plat)"
+                >
+                  <span class="badge-ico">{{ getPlatformIcon(plat) }}</span>
+                  <span class="badge-txt">{{ plat }}</span>
+                </span>
+              </div>
             </div>
 
-            <div class="task-footer-row">
-              <div class="task-target-plat">
-                <span class="plat-lbl">目标阵地:</span>
-                <span class="plat-txt">{{ task.target_platform }}</span>
+            <!-- 建议宣发/发布标题 (带一键复制) -->
+            <div class="task-title-suggestion-box" v-if="task.suggested_title">
+              <div class="suggestion-header">
+                <span class="suggestion-label">
+                  <span class="lbl-icon">📰</span>
+                  <span>建议宣发/文章标题：</span>
+                </span>
+                <button 
+                  type="button" 
+                  class="btn-copy-title"
+                  @click="copyTaskTitle(task.suggested_title, task.id || tIdx)"
+                  title="一键复制建议文章标题"
+                >
+                  <span v-if="copiedTaskTitleId === (task.id || tIdx)" class="copy-done">已复制 ✓</span>
+                  <span v-else class="copy-init">📋 复制标题</span>
+                </button>
               </div>
+              <div class="suggested-title-text">
+                {{ task.suggested_title }}
+              </div>
+            </div>
+
+            <!-- 建议核心埋词 / 实体对 -->
+            <div class="task-keywords-block" v-if="task.core_keywords && task.core_keywords.length">
+              <div class="block-label">
+                <span class="lbl-icon">🏷️</span>
+                <span>核心埋词与实体对：</span>
+              </div>
+              <div class="keywords-wrap">
+                <span v-for="(kw, kIdx) in task.core_keywords" :key="kIdx" class="kw-tag">
+                  #{{ kw }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 具体发布规范与结构建议 (大模型 RAG 采信规范) -->
+            <div class="task-format-guide-box" v-if="task.format_guide">
+              <div class="guide-title">
+                <span class="guide-icon">📋</span>
+                <strong>大模型采信发布规范建议：</strong>
+              </div>
+              <div class="guide-desc">
+                {{ task.format_guide }}
+              </div>
+            </div>
+
+            <!-- 落地执行建议步骤 -->
+            <div class="task-action-box">
+              <strong>🎯 落地执行步骤：</strong>{{ task.action }}
+            </div>
+
+            <!-- 底部：预期收益与商业价值 -->
+            <div class="task-footer-row">
               <div class="task-impact-txt">
-                <span class="impact-lbl">预期收益:</span>
+                <span class="impact-lbl">预期收益与商业价值:</span>
                 <span class="impact-txt">{{ task.expected_impact }}</span>
               </div>
             </div>
@@ -1578,6 +1643,61 @@ function fallbackCopy(text) {
     prompt('请复制公开只读分享链接：', text);
   }
   document.body.removeChild(textArea);
+}
+
+const copiedTaskTitleId = ref(null);
+
+function copyTaskTitle(title, taskId) {
+  if (!title) return;
+  const cleanTitle = title.replace(/^《|》$/g, '');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(cleanTitle).then(() => {
+      copiedTaskTitleId.value = taskId;
+      setTimeout(() => {
+        if (copiedTaskTitleId.value === taskId) copiedTaskTitleId.value = null;
+      }, 2500);
+    }).catch(() => fallbackCopy(cleanTitle));
+  } else {
+    fallbackCopy(cleanTitle);
+  }
+}
+
+function getTaskPlatforms(task) {
+  if (task.recommended_platforms && Array.isArray(task.recommended_platforms) && task.recommended_platforms.length) {
+    return task.recommended_platforms;
+  }
+  if (task.target_platform) {
+    return task.target_platform.split('/').map(p => p.trim()).filter(Boolean);
+  }
+  return ['知乎', '微信公众号', '百家号'];
+}
+
+function getPlatformBadgeClass(platformName) {
+  if (!platformName) return 'plat-default';
+  const p = platformName.toLowerCase();
+  if (p.includes('微信') || p.includes('公众号') || p.includes('视频号')) return 'plat-wechat';
+  if (p.includes('知乎')) return 'plat-zhihu';
+  if (p.includes('百度') || p.includes('百家号') || p.includes('爱采购')) return 'plat-baidu';
+  if (p.includes('今日头条') || p.includes('头条') || p.includes('抖音') || p.includes('字节')) return 'plat-toutiao';
+  if (p.includes('高德') || p.includes('腾讯地图') || p.includes('地图')) return 'plat-map';
+  if (p.includes('企查查') || p.includes('天眼查') || p.includes('黄页')) return 'plat-qcc';
+  if (p.includes('官网') || p.includes('schema') || p.includes('技术')) return 'plat-official';
+  if (p.includes('小红书')) return 'plat-xhs';
+  return 'plat-default';
+}
+
+function getPlatformIcon(platformName) {
+  if (!platformName) return '📌';
+  const p = platformName.toLowerCase();
+  if (p.includes('微信') || p.includes('公众号')) return '💬';
+  if (p.includes('知乎')) return '💡';
+  if (p.includes('百度') || p.includes('百家号') || p.includes('爱采购')) return '🔍';
+  if (p.includes('头条') || p.includes('抖音')) return '⚡';
+  if (p.includes('高德') || p.includes('地图')) return '📍';
+  if (p.includes('企查查') || p.includes('天眼查')) return '🏛️';
+  if (p.includes('官网') || p.includes('schema')) return '🌐';
+  if (p.includes('小红书')) return '📕';
+  return '📌';
 }
 
 function sanitizeUrl(url) {
@@ -3004,18 +3124,223 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 }
 
 .task-title {
-  font-size: 0.95rem;
+  font-size: 0.96rem;
   font-weight: 800;
   color: #0f172a;
-  margin-bottom: 0.55rem;
+  margin-bottom: 0.65rem;
   line-height: 1.4;
+}
+
+/* 推荐发布阵地具体清单 */
+.task-platforms-block {
+  margin-bottom: 0.65rem;
+}
+
+.block-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.lbl-icon {
+  font-size: 0.78rem;
+}
+
+.platform-badges-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.platform-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.platform-badge .badge-ico {
+  font-size: 0.75rem;
+}
+
+.platform-badge.plat-wechat {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.platform-badge.plat-zhihu {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.platform-badge.plat-baidu {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.platform-badge.plat-toutiao {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.platform-badge.plat-map {
+  background: #fdf4ff;
+  color: #86198f;
+  border-color: #f5d0fe;
+}
+
+.platform-badge.plat-qcc {
+  background: #faf5ff;
+  color: #6b21a8;
+  border-color: #e9d5ff;
+}
+
+.platform-badge.plat-official {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.platform-badge.plat-xhs {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.platform-badge.plat-default {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+/* 建议宣发标题卡片 */
+.task-title-suggestion-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #6366f1;
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.suggestion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.suggestion-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn-copy-title {
+  background: #ffffff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-copy-title:hover {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
+}
+
+.btn-copy-title .copy-done {
+  color: #059669;
+  font-weight: 700;
+}
+
+.suggested-title-text {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+/* 核心埋词与实体对 */
+.task-keywords-block {
+  margin-bottom: 0.65rem;
+}
+
+.keywords-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.kw-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #4338ca;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+}
+
+/* 具体发布规范与结构建议 */
+.task-format-guide-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.75rem;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.guide-title {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+  color: #b45309;
+}
+
+.guide-icon {
+  font-size: 0.8rem;
+}
+
+.guide-desc {
+  color: #78350f;
+  font-size: 0.73rem;
+  line-height: 1.45;
 }
 
 .task-action-box {
   font-size: 0.78rem;
   color: #334155;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 6px;
   padding: 0.6rem 0.75rem;
   margin-bottom: 0.75rem;
@@ -3032,15 +3357,10 @@ watch(() => route.params.code || route.query.code, (newCode) => {
   border-top: 1px dashed #e2e8f0;
 }
 
-.plat-lbl, .impact-lbl {
+.impact-lbl {
   color: #64748b;
   font-weight: 700;
   margin-right: 0.3rem;
-}
-
-.plat-txt {
-  color: #4338ca;
-  font-weight: 600;
 }
 
 .impact-txt {
@@ -5348,6 +5668,12 @@ watch(() => route.params.code || route.query.code, (newCode) => {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+  }
+
+  /* 靶向落地工单网格 */
+  .geo-tasks-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
   /* 处方网格 */

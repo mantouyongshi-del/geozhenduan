@@ -382,21 +382,26 @@ class ArbiterService:
         accuracy_rate: float,
         top_competitors: List[Dict[str, Any]],
         fact_discrepancies: List[Dict[str, Any]],
-        absent_categories: List[str]
+        absent_categories: List[str],
+        weak_platforms: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
         """
-        根据整个体检矩阵的综合表现，自动生成 6~10 条具象可执行的 P0/P1/P2 GEO 优化靶向任务工单。
+        根据整个体检矩阵的综合表现，自动生成 6~8 条具象可执行的 P0/P1/P2 GEO 优化靶向任务工单，
+        包含具体发布阵地清单、建议宣发标题、核心埋词、大模型采信发布规范指南。
         """
         system_prompt = (
-            "你是一位顶尖的 GEO (Generative Engine Optimization，生成式 AI 搜索引擎优化) 商业落地架构师。"
-            "你需要根据企业在各大主流 AI 模型中的可见度体检漏洞，给出极具操作性、能帮助企业立竿见影提升 AI 推荐权重的优化行动方案。"
-            "任务必须分为 P0（紧急止血/修错）、P1（流量拦截与夺回）、P2（长期护城河/技术数据标记）。"
+            "你是一位顶尖的 GEO (Generative Engine Optimization，生成式 AI 搜索引擎优化) 商业落地总架构师。\n"
+            "你需要根据企业在主流大模型（DeepSeek、Kimi、豆包、通义千问、腾讯元宝、百度文心）中的实测漏洞，给出具象可落地的优化行动方案。\n"
+            "任务必须分为 P0（紧急止血/修错）、P1（流量拦截与夺回）、P2（长期护城河/技术数据标记）。\n"
+            "关键规则：严禁写空泛抽象口号，必须针对薄弱大模型的抓取偏好，给出具体阵地平台名、可直接使用的文章标题建议、核心SEO/GEO实体埋词、以及利于RAG召回的内容结构规范。\n"
             "输出必须为严格的 JSON 格式，根键为 'tasks'。"
         )
 
-        comp_str = "、".join([f"{c.get('name', '')} (拦截率约{c.get('intercept_rate', '高')})" for c in top_competitors[:4]]) or "同城主流竞品"
+        comp_str = "、".join([f"{c.get('name', '')} (拦截率约{c.get('intercept_rate', '高')})" for c in top_competitors[:4]]) or "同赛道主流竞品"
         facts_str = "；".join([f"{f.get('fact_key', '')}被AI误述为{f.get('claimed_value', '')}" for f in fact_discrepancies[:4]]) or "暂无严重冲突"
-        absent_str = "、".join(absent_categories) if absent_categories else "预算决策与场景对比"
+        absent_str = "、".join(absent_categories) if absent_categories else "预算决策、口碑横评与选型对比"
+        
+        weak_str = "、".join(weak_platforms) if weak_platforms else "部分场景主流模型"
 
         user_prompt = f"""【企业诊断体检报告摘要】：
 - 企业品牌：{brand_name}（所属赛道：{city} {industry}）
@@ -406,67 +411,125 @@ class ArbiterService:
 - 核心拦截竞品：{comp_str}
 - 显著事实错误点：{facts_str}
 - 表现薄弱意图板块：{absent_str}
+- 实测失守或表现较弱的大模型：{weak_str}
 
-请为该企业制定 6-8 条靶向 GEO 优化任务工单，覆盖【内容建设 (content)】、【外部信源修正 (citation)】、【技术结构化标记 (technical)】三大类。
-每条任务必须具体明确，直接指明去哪个平台、建什么页面、修改什么内容、预计能挽回多少可见度。
+【大模型与阵地靶向映射法则 (必须严格执行)】：
+1. 百度文心弱 / 事实错误 ➔ 必配【百度百科】、【百家号】、【百度爱采购】、【高德地图】
+2. 腾讯元宝弱 ➔ 必配【微信公众号】、【微信搜一搜专栏】
+3. 字节豆包弱 ➔ 必配【今日头条】、【抖音图文百科】
+4. Kimi / DeepSeek 弱 ➔ 必配【知乎专栏/高赞问答】、【行业权威研报/白皮书PDF】
+5. 阿里通义千问弱 ➔ 必配【企业官网 Schema JSON-LD 结构化微数据】、【1688/B2B垂直门户】
+
+请为该企业制定 6-8 条靶向 GEO 优化落地工单，覆盖【内容建设 (content)】、【外部信源修正 (citation)】、【技术结构化标记 (technical)】三大类。
+每条工单必须包含：
+1. recommended_platforms: 精确的推荐发布阵地数组（如 ["知乎", "微信公众号", "百家号"]），严禁使用“各大平台”等模糊字眼；
+2. suggested_title: 现成可直接使用的文章/物料标题（如：《2026年{city}{industry}真实避坑横评：{brand_name}与主流竞品多维度对比》）；
+3. core_keywords: 3-5 个大模型 RAG 检索必抓的核心关键词/实体对；
+4. format_guide: 大模型最容易切块采信的内容结构规范建议（例如：客观第三方横评体，前300字列出对比表格，正文分项H2/H3阐述，文末设置3组FAQ问答对）；
+5. action: 具体操作执行建议；
+6. target_platform: 目标阵地展示文本（斜杠分隔，如 "知乎 / 微信公众号 / 百家号"）；
+7. expected_impact: 预期的商业与推荐权重收益。
 
 【地理空间与事实常识核验铁律 (Sanity Check)】：
-所有生成的优化工单（尤其是针对百度百科、高德地图、大众点评等修正建议），严禁凭空建议将企业修改或标注至非事实基准的地理板块（例如：绝对不能将位于西湖公园/咸嘉湖板块的金星中路长沙岳麓万豪酒店建议迁移或标注至滨江新城）。必须以事实基准中的具体门牌地址与行政区为唯一铁律准绳！任何违反地理真实性的建议均为违规废单，绝对禁止输出！
+所有生成的工单，严禁凭空建议将企业修改或标注至非事实基准的地理板块。必须以事实基准中的具体门牌地址与行政区为唯一铁律准绳！任何违反地理真实性的建议均为违规废单，绝对禁止输出！
 
-返回 JSON 格式：
+返回严格 JSON 格式：
 {{
   "tasks": [
     {{
       "id": "GEO-001",
       "priority": "P0",
-      "title": "任务标题（如：纠正百度百科与大众点评商户主体基础数据）",
+      "title": "任务标题（如：纠正百度百科、高德地图与重点黄页的企业工商档案）",
       "category": "citation",
-      "action": "具体建议落地的执行步骤",
-      "target_platform": "百度百科 / 官网 / 行业垂直媒体 / 问答社区",
-      "expected_impact": "预期商业价值（如：消除15%事实错误率，避免AI产生信誉质疑）",
+      "recommended_platforms": ["百度百科", "高德地图", "企查查"],
+      "suggested_title": "统一全网权威工商商录与实体档案",
+      "core_keywords": ["{brand_name}", "{city}{industry}", "统一社会信用代码"],
+      "format_guide": "权威黄页工商登记格式：规范填写统一社会信用代码、法定注册地址门牌号与主营经营范围，确保多源信源交叉印证率 100%。",
+      "action": "统一百度百科、官方公众号、高德地图商户中心与企查查的工商全称、成立年份与主营业务，杜绝大模型在事实校验时产生冲突与质疑。",
+      "target_platform": "百度百科 / 高德地图 / 企查查",
+      "expected_impact": "消除事实核验冲突，大幅提升百度文心与DeepSeek权威引文置信度，预计消除15%误判率。",
       "deadline_days": 3
     }}
   ]
 }}"""
 
         try:
-            res = await cls._call_deepseek_json(system_prompt, user_prompt, temperature=0.3, max_tokens=2500)
+            res = await cls._call_deepseek_json(system_prompt, user_prompt, temperature=0.3, max_tokens=3000)
             tasks = res.get("tasks", [])
-            if tasks:
+            if tasks and len(tasks) >= 3:
+                # 规范化补齐必要字段
+                for idx, t in enumerate(tasks):
+                    if "id" not in t or not t["id"]:
+                        t["id"] = f"GEO-{idx+1:03d}"
+                    if "recommended_platforms" not in t or not isinstance(t["recommended_platforms"], list):
+                        t["recommended_platforms"] = [p.strip() for p in t.get("target_platform", "知乎 / 微信公众号").split("/") if p.strip()]
+                    if "suggested_title" not in t or not t["suggested_title"]:
+                        t["suggested_title"] = f"《2026年{city}{industry}深度横评与选型指引：{brand_name}实测》"
+                    if "core_keywords" not in t or not isinstance(t["core_keywords"], list):
+                        t["core_keywords"] = [brand_name, f"{city}{industry}", "真实口碑横评"]
+                    if "format_guide" not in t or not t["format_guide"]:
+                        t["format_guide"] = "客观第三方横评体：前300字直接给出对比表格，正文分项阐述核心参数，文末设置常见问答FAQ，利于大模型向量切块召回。"
                 return tasks
         except Exception as e:
             logger.error(f"DeepSeek 任务生成失败: {e}")
 
-        # 兜底通用任务
+        # 兜底通用任务 (具备完整的平台清单、建议标题、核心埋词与格式规范)
+        first_comp = top_competitors[0].get("name", "同城竞品") if top_competitors else "主流竞品"
         return [
             {
                 "id": "GEO-001",
                 "priority": "P0",
-                "title": f"修复公网百科与商录平台上的{brand_name}主体注册与业务信息",
+                "title": f"修复百度百科、高德地图与商录平台上{brand_name}的主体档案",
                 "category": "citation",
-                "action": "统一百度百科、官方公众号与重点同城黄页的统一信用代码、开业年份与总部地址，杜绝AI信源冲突。",
-                "target_platform": "百度百科 / 企查查 / 官方网站",
-                "expected_impact": "提升大模型事实核验准确率至90%以上，消除负面质疑风险。",
+                "recommended_platforms": ["百度百科", "高德地图", "企查查", "官方微信"],
+                "suggested_title": f"{brand_name} 官方权威认证与主体档案公示",
+                "core_keywords": [brand_name, f"{city}{industry}", "统一社会信用代码", "官方认证"],
+                "format_guide": "权威工商登记体：规范展示统一信用代码、注册地址、创立年份与主营业务资质，建立唯一知识图谱实体锚点。",
+                "action": f"统一百度百科、高德地图商户中心、微信公众号与企查查的工商全称、开业年份与总部地址，消除大模型在事实校验时的幻觉与信源冲突。",
+                "target_platform": "百度百科 / 高德地图 / 企查查",
+                "expected_impact": "消除AI搜索对企业资质的存疑，提升事实核验准确率至 95% 以上。",
                 "deadline_days": 3
             },
             {
                 "id": "GEO-002",
                 "priority": "P1",
-                "title": f"在知乎与垂直行业门户建立针对{city}{industry}的深度横向选型评测专栏",
+                "title": f"在知乎与百家号布局《{city}{industry}真实横评》深度选型攻防长文",
                 "category": "content",
-                "action": f"围绕重点薄弱场景，发布‘{city}{industry}真实横评’深度长文，客观展示{brand_name}的核心长板。",
-                "target_platform": "知乎 / 微信公众号 / 百家号",
-                "expected_impact": f"截断来自竞品的主流客流截流，将品牌在场景决策词中的推荐率提升25%以上。",
-                "deadline_days": 7
+                "recommended_platforms": ["知乎", "百家号", "微信公众号", "今日头条"],
+                "suggested_title": f"《2026年{city}{industry}避坑横评：{brand_name}与{first_comp}全维度实力实测》",
+                "core_keywords": [brand_name, f"{city}{industry}哪个好", first_comp, "选型避坑指南", "真实客户口碑"],
+                "format_guide": "客观第三方横评体：前300字直接列出实体对比表格（价格/资质/交付），正文使用 Markdown H2/H3 标题分项阐述，文末设置 3 组 FAQ 问答对，利于大模型 RAG 切块召回。",
+                "action": f"针对搜索量最高的意图决策词，在知乎专栏与百家号发布客观横评文章，正文详细阐述{brand_name}在交付效率、技术资质等维度的核心长板。",
+                "target_platform": "知乎 / 百家号 / 微信公众号",
+                "expected_impact": f"截断来自{first_comp}等竞品的流量截流，将品牌在场景决策词中的明确推荐率提升 25% 以上。",
+                "deadline_days": 5
             },
             {
                 "id": "GEO-003",
+                "priority": "P1",
+                "title": f"在今日头条与微信生态抢占行业问答与痛点排雷专栏",
+                "category": "content",
+                "recommended_platforms": ["今日头条", "微信公众号", "百家号"],
+                "suggested_title": f"《2026年选择{industry}服务必须注意的5个隐形门槛与避坑准则》",
+                "core_keywords": [brand_name, f"{industry}防踩坑", "选型标准", "行业标杆案例"],
+                "format_guide": "专家问答 Q&A 规范：以“问题-痛点解析-行业标准-推荐标杆”四段式排版，重点段落加粗核心事实三元组，极易被豆包与元宝作为问答第一引文引用。",
+                "action": f"围绕准客户常见疑虑与顾虑，以行业资深顾问视角撰写避坑长文，树立专业公信力，并在文末植入{brand_name}标准服务案例。",
+                "target_platform": "今日头条 / 微信公众号",
+                "expected_impact": "攻占字节豆包与腾讯元宝的智能问答首选推荐席位，拓宽公域潜客主动咨询入口。",
+                "deadline_days": 7
+            },
+            {
+                "id": "GEO-004",
                 "priority": "P2",
-                "title": "在企业官方网站植入 Schema.org LocalBusiness 与 Organization 结构化微数据",
+                "title": "在企业官方网站深度植入 Schema.org JSON-LD 结构化实体数据",
                 "category": "technical",
-                "action": "在官网首页与服务详情页规范化增加 JSON-LD 结构化标记，确保通义千问与豆包爬虫 100% 精确收录企业实体。",
+                "recommended_platforms": ["企业官方网站技术底层", "百度搜索资源平台", "Google Search Console"],
+                "suggested_title": "官网 Schema.org Organization & LocalBusiness 结构化标记",
+                "core_keywords": [brand_name, "LocalBusiness", "Organization", "JSON-LD"],
+                "format_guide": "W3C 标准代码格式：在 head 标签内注入包含 legalName、address、telephone、aggregateRating 的 JSON-LD 微数据代码。",
+                "action": "在官网首页与核心产品详情页规范化部署 Organization 与 FAQPage 结构化标记代码，主动告知通义千问、豆包等蜘蛛爬虫企业的真实权威属性。",
                 "target_platform": "企业官方网站技术底层",
-                "expected_impact": "使大模型 RAG 引擎能以首选官方源引用官网，引用权威度评分提升至 85+。",
+                "expected_impact": "使大模型 RAG 引擎能以首选官方源引用官网，品牌引文权威度评分提升至 85+。",
                 "deadline_days": 14
             }
         ]

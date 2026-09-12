@@ -147,6 +147,10 @@ class GeoActionTask(BaseModel):
     target_platform: str
     expected_impact: str
     deadline_days: int
+    recommended_platforms: Optional[List[str]] = []
+    suggested_title: Optional[str] = None
+    core_keywords: Optional[List[str]] = []
+    format_guide: Optional[str] = None
 
 class AivsDimensionScores(BaseModel):
     presence_rate: float        # 品牌出现率 (0-100)

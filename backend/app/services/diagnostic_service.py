@@ -1158,6 +1158,17 @@ class DiagnosticService:
         top_comp_dicts = [{"name": c["name"], "intercept_rate": f"{c['mention_count']}次推荐"} for c in competitors_list[:4]]
         fact_discrepancies = [f for f in fact_checks if f.get("status") in ["conflict", "hallucination"]]
         
+        all_platforms = ["deepseek", "kimi", "doubao", "tongyi", "yuanbao", "baidu"]
+        platform_cnames = {
+            "deepseek": "DeepSeek",
+            "kimi": "月之暗面 Kimi",
+            "doubao": "字节跳动 豆包",
+            "tongyi": "阿里巴巴 通义千问",
+            "yuanbao": "腾讯科技 腾讯元宝",
+            "baidu": "百度智能 文心一言"
+        }
+        weak_platforms = [platform_cnames.get(p, p) for p in all_platforms if p not in platform_mentions]
+
         try:
             geo_tasks = await ArbiterService.synthesize_geo_tasks(
                 brand_name=payload.brand_name,
@@ -1168,7 +1179,8 @@ class DiagnosticService:
                 accuracy_rate=accuracy_rate,
                 top_competitors=top_comp_dicts,
                 fact_discrepancies=fact_discrepancies,
-                absent_categories=["品牌词首推", "品类推荐拦截", "口碑防踩雷"]
+                absent_categories=["品牌词首推", "品类推荐拦截", "口碑防踩雷"],
+                weak_platforms=weak_platforms
             )
         except Exception as e:
             print(f"[DiagnosticService] Arbiter synthesize_geo_tasks fallback: {e}")
