@@ -146,6 +146,89 @@ async def run_enterprise_diagnostic(payload: DiagnosticCreateRequest, request: R
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"体检执行异常: {str(e)}")
 
+
+@router.get("/latest", response_model=DiagnosticReportOut, summary="查询企业最新体检报告（M7.2 回采基线）")
+async def get_latest_diagnostic(
+    db: Session = Depends(get_db),
+    uscc: Optional[str] = Query(default=None, max_length=18, description="统一社会信用代码"),
+    company: Optional[str] = Query(default=None, max_length=100, description="企业全称"),
+    brand: Optional[str] = Query(default=None, max_length=100, description="品牌简称"),
+):
+    """按 uscc -> target_company -> brand_name 优先级匹配最新一份体检报告。
+
+    M7.2 发布效果回采的基线来源：下游 03 在草稿发布登记时拉取本端点快照。
+    纯只读查询，不消耗大模型配额，故不参与 run 的 IP 限流。
+    """
+    if not (uscc and uscc.strip()) and not (company and company.strip()) and not (brand and brand.strip()):
+        raise HTTPException(status_code=400, detail="至少提供 uscc / company / brand 之一用于匹配")
+
+    query = db.query(DiagnosticReport)
+    matched = None
+    if uscc and uscc.strip():
+        matched = (
+            query.filter(DiagnosticReport.uscc == uscc.strip())
+            .order_by(DiagnosticReport.id.desc())
+            .first()
+        )
+    if matched is None and company and company.strip():
+        matched = (
+            query.filter(DiagnosticReport.target_company == company.strip())
+            .order_by(DiagnosticReport.id.desc())
+            .first()
+        )
+    if matched is None and brand and brand.strip():
+        matched = (
+            query.filter(DiagnosticReport.brand_name == brand.strip())
+            .order_by(DiagnosticReport.id.desc())
+            .first()
+        )
+    if matched is None:
+        raise HTTPException(status_code=404, detail="未找到匹配的体检报告基线")
+    return DiagnosticService.get_report_by_code(matched.report_code, db)
+
+
+@router.post("/{report_code}/recall", response_model=DiagnosticReportOut, summary="复检回采：用原报告同口径重跑体检")
+async def recall_diagnostic(report_code: str, request: Request, db: Session = Depends(get_db)):
+    """M7.2 发布效果回采：对指定报告用完全相同的探测口径重跑一次。
+
+    复用原报告的 企业/品牌/行业/城市/关键词/USCC，保证「发布前 vs 发布后」可比；
+    产出一份全新报告（新 report_code），原报告不动。独立限流键，与手动 run 互不挤占。
+    刻意不触发自动下发/事实回流：回采是度量动作，不应重复派发工单污染队列。
+    """
+    if not REPORT_CODE_PATTERN.match(report_code or ""):
+        raise HTTPException(status_code=400, detail="报告单号格式非法")
+    ip = security_shield.get_client_ip(request)
+    security_shield.check_ip_status(ip)
+    # 回采是定时自动触发 + 手动补跑，限流放宽到 5 分钟 20 次
+    security_shield.record_and_limit_rate(f"recall:{ip}", max_requests=20, window_seconds=300)
+
+    old = db.query(DiagnosticReport).filter(DiagnosticReport.report_code == report_code).first()
+    if old is None:
+        raise HTTPException(status_code=404, detail="原体检报告不存在，无法回采")
+
+    import json as _json
+
+    try:
+        keywords = _json.loads(old.search_keywords_json or "[]")
+    except ValueError:
+        keywords = []
+    if not isinstance(keywords, list) or not keywords:
+        raise HTTPException(status_code=422, detail="原报告缺少有效关键词，无法保证同口径可比")
+
+    payload = DiagnosticCreateRequest(
+        target_company=old.target_company,
+        brand_name=old.brand_name,
+        industry=old.industry,
+        city=old.city,
+        keywords=[str(k) for k in keywords][:8],
+        uscc=old.uscc,
+    )
+    try:
+        report = await DiagnosticService.execute_diagnostic(payload, db)
+        return DiagnosticService.get_report_by_code(report.report_code, db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"回采体检执行异常: {str(e)}")
+
 @router.post("/generate_queries", response_model=GenerateQueriesResponse)
 async def generate_intent_queries_endpoint(payload: GenerateQueriesRequest, request: Request):
     """
