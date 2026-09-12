@@ -4,12 +4,12 @@
     <div class="top-action-bar no-print">
       <div class="action-inner">
         <div class="bar-left">
-          <button v-if="!isPublicView" type="button" class="back-link" @click="handleBackToConsole">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="bar-btn-icon">
+          <button type="button" class="back-link" @click="handleBackToConsole" title="返回销售演示与体检工作台">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="bar-btn-icon">
               <line x1="19" y1="12" x2="5" y2="12"></line>
               <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            <span>返回体检工作台</span>
+            <span>返回销售工作台</span>
           </button>
           <span class="report-id-tag">报告单号: {{ report.report_code }}</span>
           <span v-if="isPublicView" class="public-read-badge">🔒 客户免登验真模式</span>
@@ -1135,6 +1135,19 @@
           <div class="statement-box">
             本诊断书由<strong>【蜉蝣小宝 · 全国智能营销云平台】</strong>通过多模型探针技术自动化生成，数据采信自各大主流大模型公开搜索接口，具备客观技术分析参考价值。
           </div>
+          <!-- 底部快捷操作区 (打印时隐藏) -->
+          <div class="footer-bottom-actions no-print">
+            <button type="button" class="btn-footer-back" @click="handleBackToConsole">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="footer-btn-icon">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              <span>返回销售工作台</span>
+            </button>
+            <button type="button" class="btn-footer-poster" @click="openPosterModal">
+              <span>✨ 企业高管核心战报 · 高清图</span>
+            </button>
+          </div>
         </div>
       </footer>
     </div>
@@ -1416,11 +1429,10 @@ const currentContrast = computed(() => {
   return report.value.decision_contrasts[activeContrastTab.value] || report.value.decision_contrasts[0];
 });
 
-// 安全隔离判定：当从分享链接打开或处于非内部控制台环境时，锁死只读沙箱模式（demo 演示模式始终作为内部顾问演示）
+// 安全隔离判定：仅当明确携带 share=true 或 public=true 分享参数时，锁定外部客户免登验真模式
 const isPublicView = computed(() => {
   if (route.query.demo === 'true') return false;
   if (route.query.share === 'true' || route.query.public === 'true') return true;
-  if (!window.location.pathname.includes('console')) return true;
   return false;
 });
 
@@ -2219,35 +2231,42 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 }
 
 .action-inner {
-  max-width: 1000px;
+  max-width: 1380px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
 
 .bar-left {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 .back-link {
-  background: none;
-  border: none;
-  color: #818cf8;
-  font-size: 0.85rem;
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(129, 140, 248, 0.4);
+  color: #c7d2fe;
+  font-size: 0.84rem;
   font-weight: 600;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   cursor: pointer;
-  padding: 0;
-  transition: color 0.2s ease;
+  padding: 0.42rem 0.85rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .back-link:hover {
-  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.32);
+  border-color: #818cf8;
+  color: #ffffff;
+  transform: translateX(-2px);
 }
 
 .bar-btn-icon {
@@ -4925,6 +4944,64 @@ watch(() => route.params.code || route.query.code, (newCode) => {
   color: #94a3b8;
   text-align: center;
   line-height: 1.5;
+}
+
+.footer-bottom-actions {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.btn-footer-back {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.65rem 1.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-footer-back:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
+  transform: translateX(-3px);
+}
+
+.btn-footer-poster {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.65rem 1.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-footer-poster:hover {
+  background: linear-gradient(135deg, #4338ca, #6d28d9);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+  transform: translateY(-2px);
+}
+
+.footer-btn-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .loading-wrap {
