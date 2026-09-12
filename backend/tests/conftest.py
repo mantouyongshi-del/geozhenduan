@@ -53,6 +53,7 @@ class FakeReport:
         industry: str = "SaaS",
         uscc: Optional[str] = None,
         geo_tasks: Optional[Sequence[Any]] = None,
+        brand_facts_json: Optional[str] = None,
     ) -> None:
         self.report_code = report_code
         self.target_company = target_company
@@ -61,6 +62,8 @@ class FakeReport:
         self.industry = industry
         self.uscc = uscc
         self.geo_tasks = list(geo_tasks or [])
+        # M7.1：事实基准库（JSON 字符串，与 DiagnosticReport.brand_facts_json 同形态）
+        self.brand_facts_json = brand_facts_json
 
 
 # ---------------------------------------------------------------------------
