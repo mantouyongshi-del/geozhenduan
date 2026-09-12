@@ -14,6 +14,13 @@ class DiagnosticReport(Base):
     brand_name = Column(String(100), nullable=False, index=True, comment="品牌常用简称")
     industry = Column(String(100), nullable=False, comment="所属行业领域")
     city = Column(String(50), nullable=True, default="全国", comment="目标地域/城市")
+
+    # 统一社会信用代码：跨仓工单下发时的全局实体主键。
+    # 体检报告是分发链路的实际数据源（`/diagnostic/run` → 自动下发），
+    # 因此 USCC 必须落在本表上，下游才会真正拿到官方主键而非降级键（AGENTS.md 五.1）。
+    uscc = Column(
+        String(18), nullable=True, index=True, comment="统一社会信用代码（跨仓实体主键）"
+    )
     
     # 测试的搜索词 JSON: ["关键词1", "关键词2"]
     search_keywords_json = Column(Text, nullable=False, comment="测试提示词列表")

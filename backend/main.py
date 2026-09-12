@@ -9,6 +9,13 @@ import app.models  # 确保所有模型加载
 # 初始化创建数据库表
 Base.metadata.create_all(bind=engine)
 
+# 为"已存在的历史库"补齐 ORM 新增的列。
+# 没有这一步，给模型加任何字段都会让历史库上的相关查询报 no such column 而 500
+# （create_all 只建缺失的表，不补列 —— 详见 app/core/migrations.py 的说明）。
+from app.core.migrations import ensure_schema  # noqa: E402
+
+ensure_schema(engine)
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
