@@ -4,6 +4,7 @@ from typing import List, Optional
 import re
 import time
 from collections import defaultdict
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.diagnostic import DiagnosticReport
 from app.schemas.diagnostic import (
@@ -12,6 +13,7 @@ from app.schemas.diagnostic import (
 )
 from app.services.diagnostic_service import DiagnosticService
 from app.services.amap_service import AmapService
+from app.services.distribution_client import schedule_auto_dispatch
 
 router = APIRouter()
 
@@ -120,7 +122,12 @@ async def run_enterprise_diagnostic(payload: DiagnosticCreateRequest, request: R
 
     try:
         report = await DiagnosticService.execute_diagnostic(payload, db)
-        return DiagnosticService.get_report_by_code(report.report_code, db)
+        report_out = DiagnosticService.get_report_by_code(report.report_code, db)
+        if settings.DISTRIBUTION_AUTO_DISPATCH:
+            # 体检产出 GeoActionTask 后，自动下发给下游 03 内容分发系统。
+            # 走后台任务不阻塞体检报告实时返回，失败静默降级（AGENTS.md 五.3）。
+            schedule_auto_dispatch(report_out)
+        return report_out
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"体检执行异常: {str(e)}")
 

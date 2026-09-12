@@ -104,3 +104,25 @@
 * 未来向下游分发系统推送工单或提供查询时，统一在 HTTP 请求头中附加预共享密钥：
   * Header: `X-Internal-Token: ${INTERNAL_SERVICE_SECRET}`
   * 本地开发环境下未配置该环境变量时默认信任放行。
+
+### 5. 工单向内容工厂的自动下发 (Downstream Dispatch)
+体检报告生成后，`GeoActionTask` 工单会自动推送到下游 `03-seo-distribution`（内容工厂）：
+
+* **触发时机**：`/api/v1/diagnostic/run` 体检成功后**自动**下发；走后台任务，绝不阻塞体检报告实时返回，失败静默降级（不反噬主流程）。
+* **手动补推**：`POST /api/v1/distribution/dispatch`，入参 `{"report_code": "...", "brand_id": null, "task_ids": null}`；
+* **连通性自检**：`GET /api/v1/distribution/status`；
+* **相关环境变量**：
+
+| 变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `DISTRIBUTION_API_URL` | `http://127.0.0.1:8003` | 下游内容分发系统地址 |
+| `DISTRIBUTION_ENABLED` | `true` | 下发总开关（关闭则零网络请求） |
+| `DISTRIBUTION_AUTO_DISPATCH` | `true` | 体检成功后是否自动下发 |
+| `DISTRIBUTION_TIMEOUT_S` | `5` | 单次请求超时（秒） |
+| `DISTRIBUTION_MAX_RETRIES` | `3` | 失败重试次数（指数退避） |
+| `INTERNAL_SERVICE_SECRET` | 空 | 跨仓预共享令牌，非空时附带 `X-Internal-Token` |
+
+* **主键约定（重要）**：01 当前无 USCC 档案字段，`brand_id` 会降级为 `{企业全称}::{城市}` 联合主键（见五.1）；
+  调用方可在 `dispatch` 请求中显式传 `brand_id` 覆盖。**生产环境务必传 18 位 USCC**，
+  否则下游按该降级主键检索不到知识库事实，事实注入会退化为兜底语料。
+* 下游不可达时返回 `200` 且 `degraded > 0`（优雅降级），**绝不返回 5xx**。

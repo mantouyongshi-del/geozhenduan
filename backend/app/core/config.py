@@ -3,6 +3,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _env_float(key: str, default: float) -> float:
+    """解析浮点环境变量，非法值静默回落默认值（配置写错绝不拖垮服务启动）。"""
+    try:
+        return float(os.getenv(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_int(key: str, default: int) -> int:
+    """解析整型环境变量，非法值静默回落默认值。"""
+    try:
+        return int(os.getenv(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_bool(key: str, default: bool) -> bool:
+    """解析布尔环境变量，接受 1/true/yes/on 与 0/false/no/off。"""
+    raw = os.getenv(key)
+    if raw is None or not raw.strip():
+        return default
+    return raw.strip().lower() not in ("0", "false", "no", "off")
+
+
 class Settings:
     PROJECT_NAME: str = "GEO-Matrix AI 搜索引擎优化与巡检系统"
     API_V1_STR: str = "/api/v1"
@@ -35,5 +60,15 @@ class Settings:
 
     # 高德开放平台 Web服务 REST API Key (用于 POI 智能联想补全、权威事实反填与防呆消歧)
     AMAP_KEY: str = os.getenv("AMAP_KEY", "")
+
+    # 下游 03 内容分发系统 (Content Hub & Dispatcher) 跨仓工单推送对接
+    DISTRIBUTION_API_URL: str = os.getenv("DISTRIBUTION_API_URL", "http://127.0.0.1:8003")
+    DISTRIBUTION_ENABLED: bool = _env_bool("DISTRIBUTION_ENABLED", True)
+    DISTRIBUTION_AUTO_DISPATCH: bool = _env_bool("DISTRIBUTION_AUTO_DISPATCH", True)
+    DISTRIBUTION_TIMEOUT_S: float = _env_float("DISTRIBUTION_TIMEOUT_S", 5.0)
+    DISTRIBUTION_MAX_RETRIES: int = _env_int("DISTRIBUTION_MAX_RETRIES", 3)
+
+    # 跨仓内部服务预共享令牌 (AGENTS.md 五.4)：本地未配置时默认信任放行
+    INTERNAL_SERVICE_SECRET: str = os.getenv("INTERNAL_SERVICE_SECRET", "")
 
 settings = Settings()
