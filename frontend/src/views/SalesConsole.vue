@@ -676,6 +676,15 @@
                     </button>
                     <button 
                       type="button" 
+                      class="btn-poster-direct"
+                      @click="openExecutivePoster(item.report_code)"
+                      title="直出专供企业高管审阅的核心数据高清战报图（去粗取精，30秒看懂）"
+                    >
+                      <span class="btn-p-icon">✨</span>
+                      <span>核心战报图</span>
+                    </button>
+                    <button 
+                      type="button" 
                       class="btn-copy-link" 
                       @click="copyHistoryLink(item.report_code)"
                     >
@@ -1220,6 +1229,14 @@ function openReport(code) {
     path: '/diagnostic_report',
     query: { code }
   });
+}
+
+function openExecutivePoster(code) {
+  const routeUrl = router.resolve({
+    path: '/diagnostic_report',
+    query: { code, poster: '1' }
+  });
+  window.open(routeUrl.href, '_blank');
 }
 
 function copyHistoryLink(code) {
@@ -2400,6 +2417,29 @@ onUnmounted(() => {
 .btn-open-report:hover {
   background: rgba(59, 130, 246, 0.15);
   color: #93c5fd;
+}
+
+.btn-poster-direct {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
+}
+
+.btn-poster-direct:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #b45309 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.4);
 }
 
 .btn-open-report svg {

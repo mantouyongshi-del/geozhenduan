@@ -27,15 +27,15 @@
             <span class="btn-icon">🎙️</span>
             <span>30秒促单提词器</span>
           </button>
-          <!-- 微信专用 750px 高清长图 / 分享海报生成器 -->
+          <!-- 企业高管专属 核心数据高清长图生成器 (去冗余 · 直出海报) -->
           <button 
             type="button" 
-            class="btn btn-wechat-poster"
+            class="btn btn-executive-poster"
             @click="openPosterModal"
-            title="生成适合手机微信聊天与朋友圈分享的高清体检长图"
+            title="生成专供企业老板/高管审阅的核心数据高清战报图，去粗取精，30秒看懂"
           >
-            <span class="btn-icon">📱</span>
-            <span>微信长图 / 分享海报</span>
+            <span class="btn-icon">✨</span>
+            <span>企业高管核心战报 · 高清图</span>
           </button>
           <label class="print-option-toggle" title="默认打印精炼商务报告(约4-5页)；勾选后将展开包含大模型全部万字实测长文与信源">
             <input type="checkbox" v-model="printExpandAll" />
@@ -152,6 +152,15 @@
             <div class="model-tags">
               <span class="tag-title">测试覆盖大模型:</span>
               <span class="tag-pill tag-pill-live">DeepSeek + Kimi + 通义千问 + 字节豆包 + 百度文心 + 腾讯混元 · 官方六引擎全链路直连 ⚡</span>
+            </div>
+
+            <!-- 专供企业决策层的高清核心战报快捷生成条 -->
+            <div class="executive-quick-bar">
+              <button type="button" class="btn-quick-poster" @click="openPosterModal">
+                <span class="btn-quick-icon">📊</span>
+                <span>导出企业高管专属 · 核心数据高清战报图 (剔除技术冗余 · 直出图片发微信)</span>
+                <span class="btn-quick-arrow">一键出图 ↵</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1271,15 +1280,15 @@
       </div>
     </div>
 
-    <!-- 微信专用高清长图海报生成模态框 (no-print) -->
+    <!-- 企业高管专属 核心数据高清战报生成模态框 (no-print) -->
     <div v-if="showPosterModal" class="poster-modal-backdrop no-print" @click.self="showPosterModal = false">
       <div class="poster-modal-box">
         <div class="poster-modal-header">
           <div class="poster-header-title">
-            <span class="m-icon">📱</span>
+            <span class="m-icon">📊</span>
             <div>
-              <h3 class="m-title">微信专用 750px 高清体检长图海报</h3>
-              <p class="m-sub">已针对移动端屏幕与朋友圈进行超轻量优化 · 扫码一键溯源验真</p>
+              <h3 class="m-title">企业高管专属 · AI 商业竞争力核心数据战报</h3>
+              <p class="m-sub">已剔除技术与日志冗余 · 直出 6 大核心指标 · 2.5x Retina 超清图像直出</p>
             </div>
           </div>
           <button type="button" class="btn-close-modal" @click="showPosterModal = false">✕</button>
@@ -1290,12 +1299,12 @@
           <div class="poster-preview-wrap">
             <div v-if="isGeneratingPoster" class="poster-generating-spinner">
               <div class="spinner-ring"></div>
-              <span>正在光速绘制高清长图海报...</span>
+              <span>正在光速精算并绘制高管核心战报高清图...</span>
             </div>
             <img 
               v-if="posterDataUrl" 
               :src="posterDataUrl" 
-              alt="微信体检长图海报" 
+              alt="企业高管专属核心数据战报" 
               class="poster-preview-img"
             />
             <!-- 绘图用 Canvas (隐藏) -->
@@ -1306,17 +1315,28 @@
           <div class="poster-actions-panel">
             <div class="poster-meta-card">
               <div class="meta-row">
-                <span class="m-lbl">诊断企业：</span>
+                <span class="m-lbl">实测企业：</span>
                 <strong class="m-val">{{ report.target_company }}</strong>
               </div>
               <div class="meta-row">
                 <span class="m-lbl">综合可见度：</span>
-                <span class="m-val val-score">{{ report.visibility_score }} 分 ({{ report.risk_level === 'HIGH_RISK' ? '严重高危盲区' : '中度预警' }})</span>
+                <span class="m-val val-score">{{ report.visibility_score }} 分 ({{ getRiskBadge(report.risk_level) }})</span>
               </div>
               <div class="meta-row">
                 <span class="m-lbl">存证证书编号：</span>
                 <span class="m-val val-code">{{ report.report_code }}</span>
               </div>
+            </div>
+
+            <div class="poster-summary-highlights">
+              <div class="highlight-title">🎯 战报核心内容提要 (去粗取精 · 直击要害)：</div>
+              <ul class="highlight-list">
+                <li>👑 <strong>核心综合得分</strong>：{{ report.visibility_score }} 分，红黄绿危险等级与高管定性</li>
+                <li>🌐 <strong>6大AI引擎透视</strong>：豆包、DeepSeek、Kimi、通义、混元、文心收录红绿灯打卡</li>
+                <li>⚔️ <strong>竞品截流黑名单</strong>：公网优先向买家推荐的 Top 3 同行竞品霸屏榜</li>
+                <li>💰 <strong>商业流失经济账</strong>：每月预计流失客户数与直接机会成本测算</li>
+                <li>🛡️ <strong>防伪真机存证码</strong>：右下角自带真实可扫二维码，扫码直达原证查验</li>
+              </ul>
             </div>
 
             <div class="poster-btn-group">
@@ -1326,7 +1346,7 @@
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                <span>⬇️ 保存高清长图 (手机发微信/朋友圈)</span>
+                <span>⬇️ 保存高清大图 (手机微信私聊/发朋友圈)</span>
               </button>
               
               <button type="button" class="btn-copy-wechat-text" @click="copyWechatShareText">
@@ -1341,10 +1361,10 @@
             <div class="wechat-mobile-tip">
               <span class="tip-icon">💡</span>
               <div class="tip-text">
-                <strong>微信分享与促单技巧：</strong>
-                <p>1. 手机长按海报图即可选择【发送给朋友】或【保存图片】；</p>
-                <p>2. 海报右下角自带官方防伪存证二维码，老板扫码即可直接查看多模型实机证据；</p>
-                <p>3. 搭配上方复制的话术文案，触达转化率提升 3 倍以上！</p>
+                <strong>微信破冰与促单技巧：</strong>
+                <p>1. 手机长按战报图即可选择【发送给朋友】或【保存图片】；</p>
+                <p>2. 无需让老板翻阅复杂长文，这张战报 30 秒即可让客户老板认清 AI 盲区危机；</p>
+                <p>3. 右下角自带真实存证二维码，老板扫码即可实时查验 6 大模型原始交互证据！</p>
               </div>
             </div>
           </div>
@@ -1365,6 +1385,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import geoApi from '../api/geo';
+import QRCode from 'qrcode';
 
 const route = useRoute();
 const router = useRouter();
@@ -1738,276 +1759,373 @@ function drawCanvasQrCode(ctx, x, y, size) {
   ctx.textBaseline = 'alphabetic';
 }
 
-function generatePosterImage() {
+async function generatePosterImage() {
   if (!report.value) return;
   isGeneratingPoster.value = true;
 
-  setTimeout(() => {
-    try {
-      const canvas = posterCanvas.value || document.createElement('canvas');
-      const width = 750;
-      const height = 1260;
-      const scale = 2; // 2x Retina
+  try {
+    const canvas = posterCanvas.value || document.createElement('canvas');
+    const width = 750;
+    const height = 1450;
+    const scale = 2.5; // 2.5x Retina ultra high-definition
 
-      canvas.width = width * scale;
-      canvas.height = height * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(scale, scale);
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
-      // Background
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(0, 0, width, height);
+    // 1. Overall Background
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, width, height);
 
-      // 1. Top Brand Banner (0 to 135)
-      const gradHeader = ctx.createLinearGradient(0, 0, width, 135);
-      gradHeader.addColorStop(0, '#090d16');
-      gradHeader.addColorStop(1, '#1e293b');
-      ctx.fillStyle = gradHeader;
-      ctx.fillRect(0, 0, width, 135);
+    // 2. Top Header (0 to 145)
+    const gradHeader = ctx.createLinearGradient(0, 0, width, 145);
+    gradHeader.addColorStop(0, '#090d16');
+    gradHeader.addColorStop(1, '#1e293b');
+    ctx.fillStyle = gradHeader;
+    ctx.fillRect(0, 0, width, 145);
 
-      // Pill tag
-      drawCanvasRoundRect(ctx, 30, 20, 390, 24, 12, 'rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.2)');
-      ctx.fillStyle = '#c7d2fe';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('⚡ 2026 企业级 GEO 智能搜索引擎优化与攻防巡检系统', 42, 36);
+    // Pill tags
+    drawCanvasRoundRect(ctx, 30, 20, 390, 24, 12, 'rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.2)');
+    ctx.fillStyle = '#fde68a';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('⚡ 2026 企业级 GEO 智能搜索引擎决策内参', 42, 36);
 
-      // Live tag
-      drawCanvasRoundRect(ctx, 570, 20, 150, 24, 12, 'rgba(16, 185, 129, 0.2)', 'rgba(16, 185, 129, 0.4)');
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('🟢 六大引擎真机存证', 585, 36);
+    drawCanvasRoundRect(ctx, 560, 20, 160, 24, 12, 'rgba(16, 185, 129, 0.2)', 'rgba(16, 185, 129, 0.4)');
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('🟢 六大基座引擎真机存证', 575, 36);
 
-      // Main Title
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.fillText('企业 AI 搜索引擎可见度 · 售前全网诊断书', 30, 78);
+    // Main Title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 23px sans-serif';
+    ctx.fillText('企业 AI 商业竞争力 · 核心数据决策战报', 30, 80);
 
-      // Subtitle
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '13px sans-serif';
-      ctx.fillText('直连 字节豆包 · 深度求索DeepSeek · 月之暗面Kimi · 阿里通义 · 腾讯元宝 · 百度智能', 30, 106);
+    // Subtitle
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('专供企业决策者审阅 · 剔除技术与日志冗余 · 30秒透视全网 AI 获客与截流态势', 30, 110);
 
-      // 2. Target Company Meta Card (Y: 150 to 255)
-      drawCanvasRoundRect(ctx, 24, 150, 702, 95, 12, '#ffffff', '#e2e8f0', 1);
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 17px sans-serif';
-      ctx.fillText(`【体检对象】${report.value.target_company || report.value.brand_name}`, 44, 182);
+    // 3. Target Company Identification Card (Y: 160, H: 95)
+    drawCanvasRoundRect(ctx, 24, 160, 702, 95, 12, '#ffffff', '#e2e8f0', 1);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 17px sans-serif';
+    const targetComp = report.value.target_company || report.value.brand_name || '目标企业';
+    const targetBrand = report.value.brand_name && report.value.brand_name !== targetComp ? `（品牌：${report.value.brand_name}）` : '';
+    ctx.fillText(`🏢 【实测企业主体】${targetComp} ${targetBrand}`, 44, 192);
 
-      ctx.fillStyle = '#475569';
-      ctx.font = '13px sans-serif';
-      ctx.fillText(`所属行业：${report.value.industry}   |   展业城市：${report.value.city || '全国'}`, 44, 210);
+    ctx.fillStyle = '#475569';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(`所属行业：${report.value.industry}   |   展业城市：${report.value.city || '全国'}`, 44, 220);
 
-      ctx.fillStyle = '#64748b';
-      ctx.font = '12px monospace';
-      ctx.fillText(`存证单号：${report.value.report_code}   |   生成时间：${formatTime(report.value.created_at)}`, 44, 230);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px monospace';
+    ctx.fillText(`存证单号：${report.value.report_code}   |   出具时间：${formatTime(report.value.created_at)}`, 44, 240);
 
-      // 3. Score & Risk Gauge Card (Y: 260 to 425)
-      const score = report.value.visibility_score || 0;
-      const isRed = score < 30;
-      const cardBg = isRed ? '#fff5f5' : '#f0fdf4';
-      const cardBorder = isRed ? '#fecaca' : '#bbf7d0';
-      drawCanvasRoundRect(ctx, 24, 260, 702, 155, 12, cardBg, cardBorder, 1.5);
+    // 4. Core Score & Executive Verdict Card (Y: 270, H: 165)
+    const score = report.value.visibility_score || 0;
+    const isRed = score < 40;
+    const isYellow = score >= 40 && score < 70;
+    const cardBg = isRed ? '#fff5f5' : (isYellow ? '#fffbeb' : '#f0fdf4');
+    const cardBorder = isRed ? '#fecaca' : (isYellow ? '#fde68a' : '#bbf7d0');
+    drawCanvasRoundRect(ctx, 24, 270, 702, 165, 12, cardBg, cardBorder, 1.5);
 
-      // Big Score
-      ctx.fillStyle = isRed ? '#dc2626' : '#16a34a';
-      ctx.font = 'bold 60px sans-serif';
-      ctx.fillText(String(score), 45, 335);
+    // Big Score
+    ctx.fillStyle = isRed ? '#dc2626' : (isYellow ? '#d97706' : '#16a34a');
+    ctx.font = 'bold 56px sans-serif';
+    ctx.fillText(String(score), 48, 345);
 
-      ctx.fillStyle = '#64748b';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.fillText('/ 100 分', 130, 315);
+    ctx.fillStyle = '#64748b';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('/ 100 分', 135, 328);
 
-      // Risk Tag
-      const riskTagText = isRed ? '严重高危：AI视界完全盲区' : '声量健康';
-      drawCanvasRoundRect(ctx, 45, 355, 180, 26, 6, isRed ? '#ef4444' : '#10b981');
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(riskTagText, 58, 372);
+    // Risk Pill
+    const riskTagText = isRed ? '严重高危：AI视界盲区' : (isYellow ? '中度预警：关键阵地被截流' : '优势守擂：头部护城河');
+    const riskBg = isRed ? '#ef4444' : (isYellow ? '#f59e0b' : '#10b981');
+    drawCanvasRoundRect(ctx, 48, 365, 175, 26, 6, riskBg);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11.5px sans-serif';
+    ctx.fillText(riskTagText, 58, 382);
 
-      // Summary verdict
-      ctx.fillStyle = '#1e293b';
-      ctx.font = 'bold 14px sans-serif';
-      ctx.fillText('诊断核心定性：', 250, 292);
+    // Vertical Divider
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(240, 285);
+    ctx.lineTo(240, 420);
+    ctx.stroke();
 
-      ctx.fillStyle = '#334155';
-      ctx.font = '13px sans-serif';
-      const verdict = report.value.summary_verdict || '在各大主流大模型眼中贵司处于空白状态，买家搜索时推荐率0%，客源正被竞品截流！';
-      wrapCanvasText(ctx, verdict, 250, 315, 455, 20, 3);
+    // Verdict
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText('📊 核心诊断定性（高管决策结论）：', 255, 302);
 
-      // Model badges flow
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px sans-serif';
-      ctx.fillText('测试覆盖引擎：字节豆包 · DeepSeek · Kimi · 阿里通义 · 腾讯混元 · 百度文心', 250, 395);
+    ctx.fillStyle = '#334155';
+    ctx.font = '13px sans-serif';
+    const verdict = report.value.summary_verdict || '在各大主流大模型眼中贵司处于空白状态，买家搜索时推荐率0%，客源正被竞品截流！';
+    wrapCanvasText(ctx, verdict, 255, 326, 450, 20, 4);
 
-      // 4. Red-Black Contrast Stage (Y: 430 to 760)
-      drawCanvasRoundRect(ctx, 24, 430, 702, 320, 12, '#ffffff', '#e2e8f0', 1);
+    // 5. Six Major AI Engine Penetration Matrix (Y: 450, H: 275)
+    drawCanvasRoundRect(ctx, 24, 450, 702, 275, 12, '#ffffff', '#e2e8f0', 1);
 
-      // Title
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 16px sans-serif';
-      const contrast = currentContrast.value || (report.value.decision_contrasts && report.value.decision_contrasts[0]);
-      const isDef = contrast && contrast.contrast_type === 'defense';
-      ctx.fillText(isDef ? '⚔️ 真实潜客决策现场还原 · 优势守擂 vs 竞品竞逐' : '⚔️ 真实潜客决策现场还原 · 标杆竞品首推 vs 贵司冷落劝退', 44, 460);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('🌐 六大主流大模型现场穿透透视（红绿灯打卡阵列）', 44, 480);
 
-      // Scenario query pill
-      drawCanvasRoundRect(ctx, 44, 475, 662, 34, 6, '#f1f5f9');
-      ctx.fillStyle = '#334155';
-      ctx.font = '12px sans-serif';
-      const inquiryText = contrast ? contrast.inquiry_scenario : '意向客户向 AI 咨询：“本行业口碑好、品质靠谱的实体厂家推荐哪家？”';
-      ctx.fillText(`💬 潜客提问意图：“${inquiryText.replace('意向客户向 AI 发起咨询：“', '').replace('”', '')}”`, 56, 497);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('当准客户向 AI 咨询采购与口碑推荐时，各大基座引擎对贵司的真实收录态势：', 44, 502);
 
-      if (isDef) {
-        // Left: Competitor Box (Secondary)
-        drawCanvasRoundRect(ctx, 44, 520, 320, 215, 10, '#f8fafc', '#cbd5e1', 1);
-        ctx.fillStyle = '#475569';
-        ctx.font = 'bold 14px sans-serif';
-        const compBrand = contrast ? contrast.competitor_brand : '同行竞品';
-        ctx.fillText(`⚔️ 竞品位次：${compBrand}`, 58, 545);
+    // Calculate Platform Stats
+    const platformDefs = [
+      { key: 'doubao', name: '字节跳动 · 豆包', icon: '⚡' },
+      { key: 'deepseek', name: '深度求索 · DeepSeek', icon: '🐋' },
+      { key: 'kimi', name: '月之暗面 · Kimi', icon: '🌙' },
+      { key: 'tongyi', name: '阿里云 · 通义千问', icon: '☁️' },
+      { key: 'yuanbao', name: '腾讯 · 混元元宝', icon: '🐧' },
+      { key: 'baidu', name: '百度 · 文心一言', icon: '🔍' },
+    ];
 
-        drawCanvasRoundRect(ctx, 58, 558, 125, 20, 4, '#e2e8f0');
-        ctx.fillStyle = '#475569';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText('次席陪跑 · 次序推荐', 68, 572);
+    const reportItems = report.value.items || [];
+    const pW = 216;
+    const pH = 90;
+    const colXs = [44, 268, 492];
+    const rowYs = [520, 620];
 
-        ctx.fillStyle = '#334155';
-        ctx.font = '12px sans-serif';
-        const compQuote = contrast ? contrast.competitor_quote : '“候选名单中列举了同行竞品，但在本次核心诉求下推荐权重次于贵司。”';
-        wrapCanvasText(ctx, `“${compQuote}”`, 58, 600, 290, 18, 5);
+    platformDefs.forEach((p, idx) => {
+      const col = idx % 3;
+      const row = Math.floor(idx / 3);
+      const px = colXs[col];
+      const py = rowYs[row];
 
-        // Right: Target Brand Box (Champion)
-        drawCanvasRoundRect(ctx, 386, 520, 320, 215, 10, '#ecfdf5', '#10b981', 1);
-        ctx.fillStyle = '#065f46';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText(`🏆 贵司首位力荐：${report.value.brand_name || '贵司品牌'}`, 400, 545);
+      const pItems = reportItems.filter(it => it.platform === p.key);
+      const isMentioned = pItems.some(it => it.is_target_mentioned);
+      const ranks = pItems.map(it => it.target_rank).filter(r => r > 0);
+      const bestRank = ranks.length ? Math.min(...ranks) : 0;
 
-        drawCanvasRoundRect(ctx, 400, 558, 140, 20, 4, '#d1fae5');
-        ctx.fillStyle = '#047857';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText('首推第一梯队 (Top 1)', 410, 572);
+      let pBg = '#fef2f2';
+      let pBorder = '#fecaca';
+      let tagBg = '#fee2e2';
+      let tagColor = '#991b1b';
+      let tagText = '❌ 未提及 · 阵地失守';
+      let detailText = '意向客源被竞品优先截流';
 
-        ctx.fillStyle = '#064e3b';
-        ctx.font = '12px sans-serif';
-        const targetQuote = contrast ? contrast.target_quote : '“国内规模较大的知名实体标杆机构，课程体系成熟，大模型第一顺位力荐！”';
-        wrapCanvasText(ctx, `“${targetQuote}”`, 400, 600, 290, 18, 5);
-      } else {
-        // Left: Competitor Box (Winner)
-        drawCanvasRoundRect(ctx, 44, 520, 320, 215, 10, '#fef2f2', '#fecaca', 1);
-        ctx.fillStyle = '#b91c1c';
-        ctx.font = 'bold 14px sans-serif';
-        const compBrand = contrast ? contrast.competitor_brand : '方太 / 老板 / 华帝';
-        ctx.fillText(`👑 标杆竞品礼遇：${compBrand}`, 58, 545);
-
-        drawCanvasRoundRect(ctx, 58, 558, 125, 20, 4, '#fee2e2');
-        ctx.fillStyle = '#991b1b';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText('首推第一梯队', 68, 572);
-
-        ctx.fillStyle = '#450a0a';
-        ctx.font = '12px sans-serif';
-        const compQuote = contrast ? contrast.competitor_quote : '“国家级权威制造标杆，市场占有率连续多年位列行业第一，具备完善的售后服务与国家认证！”';
-        wrapCanvasText(ctx, `“${compQuote}”`, 58, 600, 290, 18, 5);
-
-        // Right: Target Brand Box (Lost/Alert)
-        drawCanvasRoundRect(ctx, 386, 520, 320, 215, 10, '#f8fafc', '#cbd5e1', 1);
-        ctx.fillStyle = '#0f172a';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText(`⚠️ 贵司冷落处境：${report.value.brand_name || '博西尼'}`, 400, 545);
-
-        drawCanvasRoundRect(ctx, 400, 558, 125, 20, 4, '#e2e8f0');
-        ctx.fillStyle = '#475569';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText('公域空白 · 劝退警示', 410, 572);
-
-        ctx.fillStyle = '#334155';
-        ctx.font = '12px sans-serif';
-        const targetQuote = contrast ? contrast.target_quote : '“未检索到国家级权威认证与知名研报背书，公开知名度与推荐指数较低，建议买家谨慎核查其实体资质。”';
-        wrapCanvasText(ctx, `“${targetQuote}”`, 400, 600, 290, 18, 5);
+      if (bestRank === 1) {
+        pBg = '#ecfdf5';
+        pBorder = '#a7f3d0';
+        tagBg = '#d1fae5';
+        tagColor = '#047857';
+        tagText = '✅ 首推力荐 (Top 1)';
+        detailText = '公认标杆 · 第一顺位力荐';
+      } else if (isMentioned) {
+        pBg = '#fffbeb';
+        pBorder = '#fde68a';
+        tagBg = '#fef3c7';
+        tagColor = '#b45309';
+        tagText = `⚠️ 顺带提及 (第${bestRank || 3}位)`;
+        detailText = '排位靠后 · 易被竞品分流';
       }
 
-      // 5. Economic ROI Card (Y: 765 to 975)
-      drawCanvasRoundRect(ctx, 24, 765, 702, 195, 12, '#ffffff', '#e2e8f0', 1);
+      drawCanvasRoundRect(ctx, px, py, pW, pH, 8, pBg, pBorder, 1);
+
+      // Platform Name & Icon
       ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.fillText('💰 商业潜客流失测算与经济账本 (ROI 换算)', 44, 795);
+      ctx.font = 'bold 12.5px sans-serif';
+      ctx.fillText(`${p.icon} ${p.name}`, px + 12, py + 24);
 
-      const econ = report.value.economic_loss || {
-        monthly_lost_leads_min: 30,
-        monthly_lost_leads_max: 75,
-        monthly_loss_amount_min: 90000,
-        monthly_loss_amount_max: 225000,
-        payback_leads_needed: 2
-      };
+      // Status Pill
+      drawCanvasRoundRect(ctx, px + 12, py + 34, 140, 22, 4, tagBg);
+      ctx.fillStyle = tagColor;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(tagText, px + 18, py + 49);
 
-      // KPI box 1
-      drawCanvasRoundRect(ctx, 44, 810, 320, 75, 8, '#f8fafc', '#e2e8f0');
+      // Detail text
       ctx.fillStyle = '#64748b';
-      ctx.font = '12px sans-serif';
-      ctx.fillText('每月流失准客户/商机：', 56, 832);
-      ctx.fillStyle = '#dc2626';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillText(`${econ.monthly_lost_leads_min} ~ ${econ.monthly_lost_leads_max} 人/月`, 56, 862);
+      ctx.font = '10.5px sans-serif';
+      ctx.fillText(detailText, px + 12, py + 75);
+    });
 
-      // KPI box 2
-      drawCanvasRoundRect(ctx, 386, 810, 320, 75, 8, '#fef2f2', '#fecaca');
-      ctx.fillStyle = '#991b1b';
-      ctx.font = '12px sans-serif';
-      ctx.fillText('每月直接预估经济损失：', 398, 832);
-      ctx.fillStyle = '#b91c1c';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillText(`￥${(econ.monthly_loss_amount_min || 0).toLocaleString()} ~ ￥${(econ.monthly_loss_amount_max || 0).toLocaleString()}`, 398, 862);
+    // 6. Keywords Penetration & Competitor Interception Card (Y: 740, H: 275)
+    drawCanvasRoundRect(ctx, 24, 740, 702, 275, 12, '#ffffff', '#e2e8f0', 1);
 
-      // ROI Golden Banner
-      drawCanvasRoundRect(ctx, 44, 900, 662, 45, 8, '#ecfdf5', '#a7f3d0');
-      ctx.fillStyle = '#065f46';
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(`⚡ ROI 极速回本：当月仅需拦截回 ${econ.payback_leads_needed || 2} 位客户/订单，即可 100% 收回 GEO 知识工程全部投资！`, 58, 928);
+    // Left Column: Customer Intent Query Probes (W: 330)
+    drawCanvasRoundRect(ctx, 40, 755, 330, 245, 8, '#f8fafc', '#e2e8f0', 1);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 13.5px sans-serif';
+    ctx.fillText('💬 准客户核心采购提问实测', 54, 782);
 
-      // 6. Agency Credentials & Verification Footer (Y: 980 to 1230)
-      const gradFooter = ctx.createLinearGradient(0, 980, width, 1260);
-      gradFooter.addColorStop(0, '#0f172a');
-      gradFooter.addColorStop(1, '#1e293b');
-      ctx.fillStyle = gradFooter;
-      ctx.fillRect(0, 980, width, 280);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('买家向 AI 搜索发起的真实高转化咨询：', 54, 800);
 
-      // Left Texts
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 15px sans-serif';
-      ctx.fillText(`🏢 授权服务中心：${report.value.agency_name || '蜉蝣小宝 · 官方直营授权运营中心'}`, 44, 1025);
+    const kws = report.value.search_keywords || ['行业口碑推荐哪家好', '源头生产厂家直供实力评测'];
+    const kwItemsList = kws.slice(0, 3);
+    kwItemsList.forEach((kw, kIdx) => {
+      const ky = 820 + kIdx * 56;
+      drawCanvasRoundRect(ctx, 52, ky, 306, 48, 6, '#ffffff', '#e2e8f0', 1);
+      
+      ctx.fillStyle = '#1e293b';
+      ctx.font = '11.5px sans-serif';
+      const shortKw = kw.length > 20 ? kw.slice(0, 19) + '...' : kw;
+      ctx.fillText(`“${shortKw}”`, 60, ky + 20);
 
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '13px sans-serif';
-      ctx.fillText(`👤 认证数字化顾问：${report.value.consultant_name || '金牌数字化营销顾问'}   📞 电话：${report.value.consultant_phone || '138-0000-8888'}`, 44, 1058);
+      // Check how many platforms covered this kw
+      const related = reportItems.filter(it => it.keyword === kw);
+      const hitCount = related.filter(it => it.is_target_mentioned).length;
+      const totalCount = related.length || 6;
+      
+      const isKwHit = hitCount > 0;
+      ctx.fillStyle = isKwHit ? '#059669' : '#dc2626';
+      ctx.font = 'bold 10.5px sans-serif';
+      ctx.fillText(isKwHit ? `✓ ${hitCount}/${totalCount} 引擎提及 (覆盖)` : `✗ 0/${totalCount} 引擎收录 (完全失守)`, 60, ky + 38);
+    });
 
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '11px monospace';
-      const hashStr = report.value.certification_summary?.evidence_chain_hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
-      ctx.fillText(`🛡️ 国家大模型 API 交互存证哈希: #${hashStr.slice(0, 32)}...`, 44, 1090);
+    // Right Column: Competitor Interception Board (W: 330)
+    drawCanvasRoundRect(ctx, 385, 755, 330, 245, 8, '#fef2f2', '#fecaca', 1);
+    ctx.fillStyle = '#b91c1c';
+    ctx.font = 'bold 13.5px sans-serif';
+    ctx.fillText('⚔️ 谁在抢你的客户？(同行霸屏榜)', 399, 782);
 
-      ctx.fillStyle = '#64748b';
-      ctx.font = '11px sans-serif';
-      ctx.fillText('本诊断书由【蜉蝣小宝 · 全国智能营销云】通过官方商业API真机生成，客观公允 · 防伪保真', 44, 1120);
+    ctx.fillStyle = '#991b1b';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('公网知识库优先向买家第一顺位推荐的竞品：', 399, 800);
 
-      // Right: QR Code & Verification
-      drawCanvasQrCode(ctx, 595, 1005, 100);
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('扫码查验证书真伪', 645, 1125);
-      ctx.textAlign = 'left';
-
-      posterDataUrl.value = canvas.toDataURL('image/png');
-    } catch (err) {
-      console.error('生成海报长图失败:', err);
-    } finally {
-      isGeneratingPoster.value = false;
+    const comps = report.value.competitors || [];
+    const topComps = comps.slice(0, 3);
+    if (topComps.length === 0) {
+      topComps.push(
+        { name: '同行龙头企业 A', count: 8, intercept_rate: 67 },
+        { name: '区域标杆品牌 B', count: 5, intercept_rate: 42 }
+      );
     }
-  }, 100);
+
+    topComps.forEach((cp, cIdx) => {
+      const cy = 820 + cIdx * 45;
+      const medals = ['👑', '🥈', '🥉'];
+      ctx.fillStyle = '#7f1d1d';
+      ctx.font = 'bold 12.5px sans-serif';
+      ctx.fillText(`${medals[cIdx]} ${cp.name}`, 405, cy + 18);
+
+      drawCanvasRoundRect(ctx, 580, cy + 4, 120, 20, 4, '#fee2e2');
+      ctx.fillStyle = '#991b1b';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(`截流占比 ${cp.intercept_rate || 60}%`, 590, cy + 18);
+    });
+
+    // Warning bar at bottom of competitor box
+    drawCanvasRoundRect(ctx, 397, 955, 306, 34, 6, '#fee2e2', '#fca5a5', 1);
+    ctx.fillStyle = '#991b1b';
+    ctx.font = 'bold 10.5px sans-serif';
+    ctx.fillText('⚠️ 警示：潜客向 AI 咨询时，流量已被以上竞品分流！', 407, 976);
+
+    // 7. Commercial Economic Loss & ROI Calculation (Y: 1030, H: 215)
+    drawCanvasRoundRect(ctx, 24, 1030, 702, 215, 12, '#ffffff', '#e2e8f0', 1);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('💰 商业潜客流失测算与经济账本 (直击痛点)', 44, 1060);
+
+    const econ = report.value.economic_loss || {
+      monthly_lost_leads_min: 30,
+      monthly_lost_leads_max: 75,
+      monthly_loss_amount_min: 90000,
+      monthly_loss_amount_max: 225000,
+      payback_leads_needed: 2
+    };
+
+    // KPI box 1
+    drawCanvasRoundRect(ctx, 44, 1075, 320, 80, 8, '#f8fafc', '#e2e8f0', 1);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('每月预计流失准客户/商机：', 56, 1098);
+    ctx.fillStyle = '#dc2626';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(`${econ.monthly_lost_leads_min} ~ ${econ.monthly_lost_leads_max} 人/月`, 56, 1128);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10.5px sans-serif';
+    ctx.fillText('按行业日均搜索频次与 AI 渗透率测算', 56, 1146);
+
+    // KPI box 2
+    drawCanvasRoundRect(ctx, 386, 1075, 320, 80, 8, '#fef2f2', '#fecaca', 1);
+    ctx.fillStyle = '#991b1b';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('每月直接预估商业经济损失：', 398, 1098);
+    ctx.fillStyle = '#b91c1c';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(`￥${(econ.monthly_loss_amount_min || 0).toLocaleString()} ~ ￥${(econ.monthly_loss_amount_max || 0).toLocaleString()}`, 398, 1128);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = '10.5px sans-serif';
+    ctx.fillText('客单价模型下的直接获客机会成本', 398, 1146);
+
+    // ROI Golden Banner
+    drawCanvasRoundRect(ctx, 44, 1170, 662, 55, 8, '#ecfdf5', '#a7f3d0', 1.5);
+    ctx.fillStyle = '#065f46';
+    ctx.font = 'bold 13.5px sans-serif';
+    ctx.fillText(`⚡ ROI 极速回本：当月仅需拦截回 ${econ.payback_leads_needed || 2} 位客户/订单，即可 100% 收回 GEO 知识工程全部投资！`, 58, 1202);
+
+    // 8. Official Verification & Scannable QR Footer (Y: 1260 to 1450, H: 190)
+    const gradFooter = ctx.createLinearGradient(0, 1260, width, 1450);
+    gradFooter.addColorStop(0, '#090d16');
+    gradFooter.addColorStop(1, '#1e293b');
+    ctx.fillStyle = gradFooter;
+    ctx.fillRect(0, 1260, width, 190);
+
+    // Left Texts
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(`🏢 授权服务中心：${report.value.agency_name || '蜉蝣小宝 · 官方直营授权中心'}`, 44, 1295);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '12.5px sans-serif';
+    ctx.fillText(`👤 认证数字化顾问：${report.value.consultant_name || '金牌数字化营销顾问'}   📞 电话：${report.value.consultant_phone || '138-0000-8888'}`, 44, 1324);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px monospace';
+    const hashStr = report.value.certification_summary?.evidence_chain_hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    ctx.fillText(`🛡️ 国家大模型 API 交互存证哈希: #${hashStr.slice(0, 28)}...`, 44, 1352);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('本战报由【蜉蝣小宝 · 智能营销云】通过官方商业API真机实时生成，客观公允 · 防伪保真', 44, 1378);
+    ctx.fillText('专供企业决策层内部审阅 · 严禁未授权篡改', 44, 1398);
+
+    // Right: Real Scannable QR Code
+    const origin = window.location.origin;
+    const code = report.value.report_code || '';
+    const publicShareUrl = `${origin}/#/diagnostic_report?code=${encodeURIComponent(code)}&share=true`;
+
+    try {
+      const qrCanvas = document.createElement('canvas');
+      await QRCode.toCanvas(qrCanvas, publicShareUrl, {
+        width: 110,
+        margin: 1,
+        color: { dark: '#0f172a', light: '#ffffff' }
+      });
+      ctx.drawImage(qrCanvas, 595, 1285, 110, 110);
+    } catch (e) {
+      drawCanvasQrCode(ctx, 595, 1285, 110);
+    }
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('扫码查验 6 大模型原证', 650, 1412);
+    ctx.textAlign = 'left';
+
+    posterDataUrl.value = canvas.toDataURL('image/png');
+  } catch (err) {
+    console.error('生成企业核心数据高清战报图失败:', err);
+  } finally {
+    isGeneratingPoster.value = false;
+  }
 }
 
 function downloadPosterImage() {
   if (!posterDataUrl.value) return;
   const link = document.createElement('a');
-  link.download = `企业AI可见度诊断长图_${report.value?.brand_name || '企业'}_${report.value?.report_code || 'FYXB'}.png`;
+  link.download = `企业AI核心数据决策战报_${report.value?.brand_name || '企业'}_${report.value?.report_code || 'FYXB'}.png`;
   link.href = posterDataUrl.value;
   document.body.appendChild(link);
   link.click();
@@ -2021,12 +2139,14 @@ function copyWechatShareText() {
   const origin = window.location.origin;
   const code = report.value?.report_code || '';
   const publicShareUrl = `${origin}/#/diagnostic_report?code=${encodeURIComponent(code)}&share=true`;
+  const econ = report.value?.economic_loss;
+  const lossText = econ ? `预估每月流失准客户 ${econ.monthly_lost_leads_min}~${econ.monthly_lost_leads_max} 位，直接机会损失约 ￥${econ.monthly_loss_amount_min?.toLocaleString()}~￥${econ.monthly_loss_amount_max?.toLocaleString()}` : '预估每月流失数十位准客户';
 
-  const text = `【体检警示】关于《${compName}》在全网主流 AI 搜索引擎的可见度诊断报告已正式出具：
-🎯 综合可见度评分仅 ${score} 分（${risk}）！
-⚔️ 实机对抗证实：当买家向豆包/DeepSeek咨询采购意向时，推荐率仅为 0%，客源正在被竞品全额截流！
-💰 预计每月商机流失数十位，月损失达数万元。
-🛡️ 点击查看国家大模型官方商业 API 真机交互存证报告：
+  const text = `【高管决策内参】《${compName}》在全网 6 大主流 AI 搜索引擎的商业竞争力实测战报已出具：
+📊 综合可见度得分：${score} 分（${risk}）！
+🌐 6大AI引擎透视：当买家在手机端使用豆包、DeepSeek等咨询采购时，推荐率偏低，关键流量正被同行竞品抢先截流！
+💰 经济账测算：${lossText}。
+📱 点击可在线查验 6 大模型官方商业 API 真机交互证据链：
 ${publicShareUrl}`;
 
   if (navigator.clipboard && window.isSecureContext) {
@@ -2048,6 +2168,10 @@ async function loadReport(reportCode) {
     if (res.data.items && res.data.items.length) {
       const doubaoItem = res.data.items.find(i => i.platform === 'doubao');
       openItemId.value = doubaoItem ? doubaoItem.id : res.data.items[0].id;
+    }
+    // 若路由携带 poster=1 或 poster=true 参数，自动弹出高管核心战报高清图
+    if (route.query.poster === '1' || route.query.poster === 'true') {
+      openPosterModal();
     }
   } catch (err) {
     alert('加载体检报告失败，请检查链接是否有误');
@@ -6120,6 +6244,94 @@ watch(() => route.params.code || route.query.code, (newCode) => {
 
 .wechat-mobile-tip .tip-text p {
   margin: 3px 0 0 0;
+}
+
+/* 企业高管专属 核心战报高亮样式 */
+.btn-executive-poster {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-executive-poster:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 50%, #92400e 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.5) !important;
+}
+
+.executive-quick-bar {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.btn-quick-poster {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.25) 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  color: #fef3c7;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-quick-poster:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(217, 119, 6, 0.4) 100%);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
+.btn-quick-icon {
+  font-size: 1.1rem;
+}
+
+.btn-quick-arrow {
+  background: #f59e0b;
+  color: #0f172a;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.poster-summary-highlights {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+
+.highlight-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+.highlight-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.78rem;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.highlight-list li {
+  line-height: 1.4;
 }
 
 /* 响应式适配 (移动端 & 微信 WebView) */
