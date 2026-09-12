@@ -345,6 +345,34 @@
               </div>
             </div>
 
+            <!-- 统一社会信用代码：跨仓下发的全局实体主键 -->
+            <div class="form-group">
+              <div class="form-label-row">
+                <label class="form-label">统一社会信用代码 (选填 · 强烈建议填写)</label>
+                <span class="uscc-key-tag" title="填写后跨仓工单下发将使用官方主键，下游可据此检索官方核准事实；不填则降级为「企业全称::城市」，检索不到官方事实只能走兜底语料">
+                  🔑 跨仓官方主键
+                </span>
+              </div>
+              <input 
+                v-model="form.uscc" 
+                @blur="autofillUsccFromArchive()"
+                maxlength="18"
+                autocomplete="off"
+                placeholder="选填 · 18 位统一社会信用代码，填写后工单下发将携带官方主键" 
+                class="form-input" 
+                :class="usccError ? 'uscc-input-error' : (usccValid ? 'uscc-input-ok' : '')"
+              />
+              <div class="uscc-hint" v-if="usccError">
+                ⚠️ {{ usccError }}
+              </div>
+              <div class="uscc-hint uscc-hint-ok" v-else-if="usccValid">
+                ✓ 校验位正确，本次体检产出的工单将携带官方主键下发
+              </div>
+              <div class="uscc-hint uscc-hint-muted" v-else>
+                未填写时下游将降级使用「企业全称::城市」作为主键，检索不到官方事实
+              </div>
+            </div>
+
             <!-- 快捷行业词模版 -->
             <div class="preset-templates">
               <span class="preset-label">实测案例快速填入:</span>
@@ -775,6 +803,7 @@ import {
   generateSingleDistrictKeyword,
   cleanIndustryToCategory
 } from '../utils/geoDistricts';
+import { normalizeUscc, isValidUscc, usccErrorMessage, isUsccFilledButInvalid } from '../utils/uscc';
 
 const router = useRouter();
 const route = useRoute();
@@ -784,15 +813,42 @@ const form = ref({
   brand_name: '',
   industry: '',
   city: '全国',
+  uscc: '',
   agency_name: '蜉蝣小宝 · 官方直营授权运营中心',
   consultant_name: '金牌数字化营销顾问',
-  consultant_phone: '138-0000-8888'
+  consultant_phone: '138-0000-8888',
+  uscc: ''
 });
 
 // 动态解析城市意图深度与下辖区县拓扑
 const geoIntentInfo = computed(() => {
   return resolveCityAndDistricts(form.value.city);
 });
+
+// 统一社会信用代码：跨仓下发的全局实体主键（选填，填了就必须对）。
+// 未填写属于正常路径（下游会降级为 `{企业全称}::{城市}`），因此不拦截。
+const usccValue = computed(() => normalizeUscc(form.value.uscc));
+const usccError = computed(() => usccErrorMessage(form.value.uscc));
+const usccValid = computed(() => isValidUscc(usccValue.value));
+
+// 已录入的企业档案（用于按企业全称自动带出 USCC，避免销售每次手工重录）
+const companyArchives = ref([]);
+
+/** 按企业全称匹配档案，仅在用户尚未填写 USCC 时自动回填 */
+function autofillUsccFromArchive(companyName) {
+  const target = (companyName || form.value.target_company || '').trim();
+  if (!target || usccValue.value) return false;
+  const hit = (companyArchives.value || []).find(c => {
+    const name = (c?.name || '').trim();
+    if (!name || !c?.uscc) return false;
+    return name === target || (name.includes(target) && name.length - target.length <= 2);
+  });
+  if (hit?.uscc) {
+    form.value.uscc = hit.uscc;
+    return true;
+  }
+  return false;
+}
 
 const keywordsStr = ref('');
 const isRunning = ref(false);
@@ -878,6 +934,9 @@ async function selectPoi(poi) {
   showFactsSetting.value = true;
   formFacts.value.headquarters = poi.full_address || `${poi.district} ${poi.address}`;
 
+  // 选中高德官方实体后，若档案库里已有该企业的 USCC 则自动带出
+  autofillUsccFromArchive(poi.name);
+
   // 尝试拉取深层详情 (官方电话、星级分类)
   if (poi.id) {
     try {
@@ -904,6 +963,8 @@ function selectBranchQuickly(branchName) {
   form.value.target_company = branchName;
   form.value.brand_name = branchName;
   poiDisambiguation.value.isChainGeneric = false;
+  // 切换到具体单体门店后重新尝试带出该门店的官方主键
+  autofillUsccFromArchive(branchName);
   triggerPoiSearch(branchName);
 }
 
@@ -1028,6 +1089,8 @@ function applyTemplate(tpl) {
   form.value.brand_name = tpl.brand;
   form.value.industry = tpl.industry;
   form.value.city = tpl.city || '全国';
+  // 行业模版没有官方工商主键，切换模版时必须清空，避免把上一家企业的 USCC 带错
+  form.value.uscc = tpl.uscc || '';
   keywordsStr.value = tpl.keywords;
   if (tpl.facts) {
     formFacts.value = { ...tpl.facts };
@@ -1183,12 +1246,23 @@ async function handleStartDiagnostic() {
     customFacts.push({ fact_type: '资质荣誉', fact_key: '官方资质与权威背书', fact_value: formFacts.value.certifications.trim() });
   }
 
+  // 统一社会信用代码：可选字段，但"填了就必须对"。
+  // 校验位错误的 USCC 会让下游拿它去查知识库而查不到，静默退化为兜底语料 ——
+  // 比"干脆不填"更隐蔽、更难排查，所以必须在前端就拦住。
+  if (isUsccFilledButInvalid(form.value.uscc)) {
+    alert('统一社会信用代码不合法：' + usccErrorMessage(form.value.uscc) + '\n\n请核对后重新录入，或清空该项（不填也可提交，但下游将使用降级主键）。');
+    isRunning.value = false;
+    stopRadarTimer();
+    return;
+  }
+
   try {
     const res = await geoApi.runDiagnostic({
       target_company: form.value.target_company.trim(),
       brand_name: form.value.brand_name.trim(),
       industry: form.value.industry.trim(),
       city: form.value.city || '全国',
+      uscc: usccValue.value || null,
       keywords: kws,
       agency_name: form.value.agency_name,
       consultant_name: form.value.consultant_name,
@@ -1301,6 +1375,18 @@ function launchFastDemo(code = 'FYXB-1788971230-2154') {
   router.push(`/diagnostic_report?code=${code}&demo=true`);
 }
 
+async function loadCompanyArchives() {
+  // 企业档案里已录入的 USCC 可自动带出，避免销售每次体检都手工重录 18 位主键。
+  // 拉取失败静默忽略：这只是便利性增强，绝不能因为拿不到档案而阻断录入。
+  try {
+    const res = await geoApi.getCompanies();
+    companyArchives.value = Array.isArray(res.data) ? res.data : [];
+    autofillUsccFromArchive();
+  } catch (e) {
+    companyArchives.value = [];
+  }
+}
+
 function onGlobalKeyDown(e) {
   if (e.key === 'Escape' && showFuelModal.value) {
     showFuelModal.value = false;
@@ -1312,12 +1398,14 @@ onMounted(() => {
   loadAgencyInfo();
   loadHistory();
   fetchModelsBalance();
+  loadCompanyArchives();
   if (route.query.brand || route.query.industry || route.query.company) {
     if (route.query.brand) form.value.brand_name = route.query.brand;
     if (route.query.company) form.value.target_company = route.query.company;
     else if (route.query.brand) form.value.target_company = route.query.brand;
     if (route.query.industry) form.value.industry = route.query.industry;
     if (route.query.city) form.value.city = route.query.city;
+    if (route.query.uscc) form.value.uscc = route.query.uscc;
     if (route.query.keywords) {
       keywordsStr.value = Array.isArray(route.query.keywords) 
         ? route.query.keywords.join('\n') 
@@ -3544,5 +3632,54 @@ onUnmounted(() => {
   color: #0f172a;
   transform: translateY(-1px);
   box-shadow: 0 3px 8px rgba(245, 158, 11, 0.4);
+}
+
+/* ---- 统一社会信用代码 (跨仓官方主键) 录入区 ---- */
+.uscc-key-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: help;
+  white-space: nowrap;
+}
+
+.uscc-input-error {
+  border-color: #ef4444 !important;
+  background: #fef2f2;
+}
+
+.uscc-input-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+}
+
+.uscc-input-ok {
+  border-color: #10b981 !important;
+  background: #ecfdf5;
+}
+
+.uscc-input-ok:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18) !important;
+}
+
+.uscc-hint {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #dc2626;
+}
+
+.uscc-hint-ok {
+  color: #059669;
+}
+
+.uscc-hint-muted {
+  color: #94a3b8;
 }
 </style>

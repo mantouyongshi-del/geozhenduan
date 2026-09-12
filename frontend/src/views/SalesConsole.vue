@@ -327,6 +327,29 @@
                 </div>
               </div>
 
+              <!-- 统一社会信用代码：跨仓官方主键 -->
+              <div class="form-item">
+                <label class="form-label">
+                  <span>统一社会信用代码</span>
+                  <span class="badge-optional" title="填写后跨仓工单下发将使用官方主键，下游可据此检索官方核准事实">跨仓官方主键 · 选填</span>
+                </label>
+                <input
+                  v-model="form.uscc"
+                  maxlength="18"
+                  autocomplete="off"
+                  placeholder="选填 · 18 位统一社会信用代码，填写后工单下发将携带官方主键"
+                  class="form-control"
+                  :class="usccError ? 'uscc-input-error' : (usccValid ? 'uscc-input-ok' : '')"
+                />
+                <div class="uscc-hint" v-if="usccError">⚠️ {{ usccError }}</div>
+                <div class="uscc-hint uscc-hint-ok" v-else-if="usccValid">
+                  ✓ 校验位正确，本次体检产出的工单将携带官方主键下发
+                </div>
+                <div class="uscc-hint uscc-hint-muted" v-else>
+                  未填写时下游将降级使用「企业全称::城市」作为主键，检索不到官方事实
+                </div>
+              </div>
+
               <!-- 关键词输入与 AI 截流词生成 -->
               <div class="form-item">
                 <div class="label-action-row">
@@ -831,6 +854,7 @@ import {
   generateSingleDistrictKeyword,
   cleanIndustryToCategory
 } from '../utils/geoDistricts';
+import { normalizeUscc, isValidUscc, usccErrorMessage, isUsccFilledButInvalid } from '../utils/uscc';
 
 const router = useRouter();
 const route = useRoute();
@@ -842,10 +866,16 @@ const form = ref({
   brand_name: '',
   industry: '',
   city: '全国',
+  uscc: '',
   agency_name: '蜉蝣小宝 · 官方直营授权运营中心',
   consultant_name: '金牌数字化营销顾问',
   consultant_phone: '138-0000-8888'
 });
+
+// 统一社会信用代码：跨仓下发的全局实体主键（选填，填了就必须对）
+const usccValue = computed(() => normalizeUscc(form.value.uscc));
+const usccError = computed(() => usccErrorMessage(form.value.uscc));
+const usccValid = computed(() => isValidUscc(usccValue.value));
 
 // 动态解析城市意图深度与下辖区县拓扑
 const geoIntentInfo = computed(() => {
@@ -952,6 +982,8 @@ function applyTemplate(tpl) {
   form.value.brand_name = tpl.brand;
   form.value.industry = tpl.industry;
   form.value.city = tpl.city || '全国';
+  // 行业模版没有官方工商主键，切换时必须清空，避免把上一家企业的 USCC 带错
+  form.value.uscc = tpl.uscc || '';
   keywordsStr.value = tpl.keywords;
 }
 
@@ -960,6 +992,7 @@ function resetForm() {
   form.value.brand_name = '';
   form.value.industry = '';
   form.value.city = '全国';
+  form.value.uscc = '';
   keywordsStr.value = '';
 }
 
@@ -1149,6 +1182,14 @@ async function handleStartDiagnostic() {
     return;
   }
 
+  // 统一社会信用代码：可选字段，但"填了就必须对"（同 DiagnosticConsole 的口径）
+  if (isUsccFilledButInvalid(form.value.uscc)) {
+    alert('统一社会信用代码不合法：' + usccErrorMessage(form.value.uscc) + '\n\n请核对后重新录入，或清空该项（不填也可提交，但下游将使用降级主键）。');
+    isRunning.value = false;
+    stopRadarTimer();
+    return;
+  }
+
   isRunning.value = true;
   startRadarTimer();
 
@@ -1158,6 +1199,7 @@ async function handleStartDiagnostic() {
       brand_name: form.value.brand_name.trim(),
       industry: form.value.industry.trim(),
       city: form.value.city || '全国',
+      uscc: usccValue.value || null,
       keywords: kws,
       agency_name: form.value.agency_name,
       consultant_name: form.value.consultant_name,
@@ -2831,5 +2873,43 @@ onUnmounted(() => {
   .console-sub-bar {
     overflow-x: auto;
   }
+}
+
+/* ---- 统一社会信用代码 (跨仓官方主键) 录入区 ---- */
+.badge-optional {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: help;
+}
+
+.uscc-input-error {
+  border-color: #ef4444 !important;
+  background: #fef2f2;
+}
+
+.uscc-input-ok {
+  border-color: #10b981 !important;
+  background: #ecfdf5;
+}
+
+.uscc-hint {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #dc2626;
+}
+
+.uscc-hint-ok {
+  color: #059669;
+}
+
+.uscc-hint-muted {
+  color: #94a3b8;
 }
 </style>
