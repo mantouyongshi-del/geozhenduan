@@ -51,6 +51,7 @@ class FakeReport:
         brand_name: str = "示例科技",
         city: str = "深圳",
         industry: str = "SaaS",
+        uscc: Optional[str] = None,
         geo_tasks: Optional[Sequence[Any]] = None,
     ) -> None:
         self.report_code = report_code
@@ -58,6 +59,7 @@ class FakeReport:
         self.brand_name = brand_name
         self.city = city
         self.industry = industry
+        self.uscc = uscc
         self.geo_tasks = list(geo_tasks or [])
 
 
