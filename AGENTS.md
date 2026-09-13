@@ -31,8 +31,8 @@
 ## 二、 仓库 1 专属业务定位与核心边界 (Domain Boundaries)
 
 ### 1. 仓库角色定位
-* **系统名称**：讯灵 GEO 商业诊断与监控雷达 (Radar & Prescription Engine)
-* **核心职责**：作为整个讯灵 GEO 商业矩阵的 **“体检中心与处方发起者 (Radar & Prescriber)”**。
+* **系统名称**：蜉蝣小宝 GEO 商业诊断与监控雷达 (Radar & Prescription Engine)
+* **核心职责**：作为整个蜉蝣小宝 GEO 商业矩阵的 **“体检中心与处方发起者 (Radar & Prescriber)”**。
 * **主要功能**：
   1. 六大主流基座大模型（DeepSeek、豆包、Kimi、元宝、文心一言、通义千问）真机并发评测；
   2. AIVS 六维健康得分测算、同行竞品截流榜统计与商业损失量化测算；
