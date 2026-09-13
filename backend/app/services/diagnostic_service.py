@@ -2222,6 +2222,7 @@ class DiagnosticService:
                 "model_name": "deepseek-chat (V3/R1深度推理链)",
                 "currency": "CNY",
                 "total_balance": None,
+                "precise_balance": None,
                 "granted_balance": None,
                 "topped_up_balance": None,
                 "masked_key": cls._mask_key(settings.DEEPSEEK_API_KEY),
@@ -2251,6 +2252,7 @@ class DiagnosticService:
                             gift = float(first_b.get("granted_balance") or 0.0)
                             pay = float(first_b.get("topped_up_balance") or 0.0)
                             ds_info["total_balance"] = round(tot, 2)
+                            ds_info["precise_balance"] = round(tot, 4)
                             ds_info["granted_balance"] = round(gift, 2)
                             ds_info["topped_up_balance"] = round(pay, 2)
                             ds_info["is_available"] = data.get("is_available", True)
@@ -2287,6 +2289,7 @@ class DiagnosticService:
                 "model_name": "kimi-k2.6 (长文本研报精读)",
                 "currency": "CNY",
                 "total_balance": None,
+                "precise_balance": None,
                 "granted_balance": None,
                 "topped_up_balance": None,
                 "masked_key": cls._mask_key(settings.MOONSHOT_API_KEY),
@@ -2313,6 +2316,7 @@ class DiagnosticService:
                         voucher = float(data.get("voucher_balance") or 0.0)
                         cash = float(data.get("cash_balance") or 0.0)
                         kimi_info["total_balance"] = round(tot, 2)
+                        kimi_info["precise_balance"] = round(tot, 4)
                         kimi_info["granted_balance"] = round(voucher, 2)
                         kimi_info["topped_up_balance"] = round(cash, 2)
                         kimi_info["is_available"] = True
@@ -2349,6 +2353,7 @@ class DiagnosticService:
                 "model_name": "qwen-turbo (百炼全网原生联网)",
                 "currency": "CNY",
                 "total_balance": None,
+                "precise_balance": None,
                 "granted_balance": None,
                 "topped_up_balance": None,
                 "masked_key": cls._mask_key(qw_key),
@@ -2390,6 +2395,7 @@ class DiagnosticService:
                         cash_val = float(cash_str) if cash_str else 0.0
                         
                         qw_info["total_balance"] = round(avail_val, 2)
+                        qw_info["precise_balance"] = round(avail_val, 4)
                         qw_info["granted_balance"] = round(max(0.0, avail_val - cash_val), 2)
                         qw_info["topped_up_balance"] = round(cash_val, 2)
                         qw_info["status_text"] = "主账号余额充足"
@@ -2422,6 +2428,7 @@ class DiagnosticService:
                 "model_name": settings.DOUBAO_MODEL_NAME or "doubao-seed-2-0-mini",
                 "currency": "CNY",
                 "total_balance": None,
+                "precise_balance": None,
                 "granted_balance": None,
                 "topped_up_balance": None,
                 "masked_key": cls._mask_key(volc_ak or settings.DOUBAO_API_KEY),
@@ -2454,6 +2461,7 @@ class DiagnosticService:
                         v_credit = float(str(vdata.get("CreditCarryOverBalance", 0.0)).replace(",", ""))
                         
                         db_info["total_balance"] = round(v_avail, 2)
+                        db_info["precise_balance"] = round(v_avail, 4)
                         db_info["granted_balance"] = round(v_credit, 2)
                         db_info["topped_up_balance"] = round(v_cash, 2)
                         db_info["status_text"] = "火山账户余额充足"
@@ -2472,6 +2480,7 @@ class DiagnosticService:
                 "model_name": "hy3 (混元大模型 / 微信生态)",
                 "currency": "CNY",
                 "total_balance": None,
+                "precise_balance": None,
                 "granted_balance": None,
                 "topped_up_balance": None,
                 "masked_key": cls._mask_key(hy_key) if hy_key else "腾讯混元开放引擎",
@@ -2511,6 +2520,7 @@ class DiagnosticService:
                 "model_name": "ernie-4.5-turbo-32k (文心大模型)",
                 "currency": "CNY",
                 "total_balance": None,
+                "precise_balance": None,
                 "granted_balance": None,
                 "topped_up_balance": None,
                 "masked_key": cls._mask_key(bd_key) if bd_key else "未配置",
@@ -2572,6 +2582,7 @@ class DiagnosticService:
                         b_data = r_bal.json()
                         cash_val = float(b_data.get("cashBalance", b_data.get("cash", 0.0)))
                         bd_info["total_balance"] = round(cash_val, 2)
+                        bd_info["precise_balance"] = round(cash_val, 4)
                         bd_info["topped_up_balance"] = round(cash_val, 2)
                         bd_info["granted_balance"] = 0.0
                         total_cny_balance += cash_val
@@ -2587,6 +2598,7 @@ class DiagnosticService:
         return {
             "updated_at": now_ts,
             "total_cny_balance": round(total_cny_balance, 2),
+            "precise_cny_balance": round(total_cny_balance, 4),
             "configured_count": sum(1 for m in models_data if m["is_configured"]),
             "available_count": sum(1 for m in models_data if m["is_available"]),
             "total_models": len(models_data),

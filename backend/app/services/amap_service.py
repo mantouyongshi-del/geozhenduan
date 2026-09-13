@@ -48,7 +48,14 @@ class AmapService:
                 "candidate_branches": []
             }
 
-        api_key = settings.AMAP_KEY or ""
+        api_key = settings.AMAP_KEY
+        if not api_key:
+            return {
+                "suggestions": [],
+                "is_chain_generic": False,
+                "warning_message": "",
+                "candidate_branches": []
+            }
         params = {
             "keywords": kw,
             "key": api_key
@@ -154,7 +161,7 @@ class AmapService:
         """
         获取指定 POI 的权威事实标尺详情（电话、星级/标签、详细地址、经纬度坐标）
         """
-        api_key = settings.AMAP_KEY or ""
+        api_key = settings.AMAP_KEY
         result = {
             "name": name or "",
             "address": "",
@@ -164,6 +171,8 @@ class AmapService:
             "type_tag": "",
             "location": ""
         }
+        if not api_key:
+            return result
 
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:

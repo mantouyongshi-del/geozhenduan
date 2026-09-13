@@ -19,14 +19,14 @@
           <button 
             type="button" 
             class="nav-fuel-btn" 
-            :class="{ 'has-warning': hasBalanceWarning }"
-            @click="showFuelModal = true"
+            :class="{ 'has-warning': hasBalanceWarning, 'is-refreshing': isLoadingBalance }"
+            @click="openFuelModal"
             title="查看 6 大 AI 大模型实时算力配额、充值对账与投屏脱敏"
           >
             <span class="pulse-dot" :class="{ 'dot-warning': hasBalanceWarning }"></span>
             <span class="fuel-text">⚡ 诊断算力燃料池</span>
             <span class="fuel-pill-num" v-if="modelsBalance && !isPrivacyMode">
-              ¥{{ (modelsBalance.total_cny_balance !== undefined ? modelsBalance.total_cny_balance.toFixed(2) : '20.56') }}
+              ¥{{ (modelsBalance.total_cny_balance !== undefined ? modelsBalance.total_cny_balance.toFixed(2) : '--.--') }}
             </span>
             <span class="fuel-pill-num" v-else-if="isPrivacyMode">¥ •••</span>
             <span class="fuel-arrow">↗</span>
@@ -664,7 +664,10 @@
           <div class="toolbar-left">
             <div class="total-balance-pill" v-if="modelsBalance">
               <span class="total-label">全网可用燃料总池:</span>
-              <span class="total-amount">¥ {{ isPrivacyMode ? '•••.••' : (modelsBalance.total_cny_balance !== undefined ? modelsBalance.total_cny_balance.toFixed(2) : '20.56') }}</span>
+              <span class="total-amount">
+                ¥ {{ isPrivacyMode ? '•••.••' : (modelsBalance.total_cny_balance !== undefined ? (isHighPrecision && modelsBalance.precise_cny_balance !== undefined ? Number(modelsBalance.precise_cny_balance).toFixed(4) : Number(modelsBalance.total_cny_balance).toFixed(2)) : '--.--') }}
+              </span>
+              <span class="precision-pill-badge" v-if="isHighPrecision && !isPrivacyMode">4位微额精度</span>
             </div>
             <button 
               type="button" 
@@ -675,9 +678,23 @@
             >
               <span>{{ isPrivacyMode ? '🔒 投屏脱敏中 (已遮罩)' : '👁️ 投屏防窥脱敏' }}</span>
             </button>
+            <button 
+              type="button" 
+              class="btn-precision-toggle"
+              :class="{ active: isHighPrecision }"
+              @click="isHighPrecision = !isHighPrecision"
+              title="切换显示 4 位小数毫厘级微额消耗 (单次体检仅消耗几厘钱)"
+            >
+              <span>{{ isHighPrecision ? '🔬 毫厘微额精度 (4位)' : '📐 标准两位精度' }}</span>
+            </button>
           </div>
 
           <div class="toolbar-right">
+            <transition name="fade">
+              <span class="badge-success-glow" v-if="justRefreshed">
+                ✓ 官方账单已实时对齐
+              </span>
+            </transition>
             <span class="balance-update-time" v-if="balanceLastUpdated">
               🕒 对账更新: {{ balanceLastUpdated }}
             </span>
@@ -685,12 +702,12 @@
               type="button" 
               class="btn-refresh-balance" 
               :class="{ 'is-refreshing': isLoadingBalance }" 
-              @click="fetchModelsBalance"
+              @click="() => fetchModelsBalance(false, true)"
               :disabled="isLoadingBalance"
               title="重新获取各大模型官方账单与额度"
             >
-              <span class="refresh-icon">🔄</span>
-              <span>{{ isLoadingBalance ? '获取中...' : '刷新实时余额' }}</span>
+              <span class="refresh-icon" :class="{ 'spin-anim': isLoadingBalance }">🔄</span>
+              <span>{{ isLoadingBalance ? '官方对账中...' : '刷新实时余额' }}</span>
             </button>
           </div>
         </div>
@@ -730,7 +747,10 @@
                 <div class="main-balance" :class="{ 'live-number': model.total_balance !== null }">
                   <template v-if="model.total_balance !== null">
                     <span class="currency">¥</span>
-                    <span class="num">{{ isPrivacyMode ? '•••' : model.total_balance.toFixed(2) }}</span>
+                    <span class="num">
+                      {{ isPrivacyMode ? '•••' : (isHighPrecision && model.precise_balance !== undefined && model.precise_balance !== null ? Number(model.precise_balance).toFixed(4) : Number(model.total_balance).toFixed(2)) }}
+                    </span>
+                    <span class="mini-precision-tag" v-if="isHighPrecision && model.precise_balance !== undefined && !isPrivacyMode">精细</span>
                   </template>
                   <template v-else>
                     <span class="num non-live-text">{{ model.status_text }}</span>
@@ -782,7 +802,12 @@
         <!-- 弹窗底部说明 -->
         <div class="fuel-modal-footer">
           <div class="fmodal-tip">
-            💡 <strong>商业对账说明：</strong>数据采信自火山引擎、阿里云百炼、月之暗面、百度千帆等各模型官方计费 API。单模型额度告急将自动触发状态预警。
+            <div class="fmodal-tip-row">
+              💡 <strong>账单扣费特性说明：</strong>单次全网体检通常仅消耗约 <strong>¥0.002 ~ ¥0.008</strong>（几厘钱）。阿里云百炼、火山引擎、百度千帆等云厂商财务中心采用 <strong>5~30 分钟批处理出账机制</strong>，短时间内余额未发生百位分跳变属于正常联机计费现象。
+            </div>
+            <div class="fmodal-tip-row-sub">
+              🟢 页面每 60 秒自动联机巡检各大厂商官方 OpenAPI；可点击上方<strong>“毫厘微额精度”</strong>实时查看 4 位小数级微量 Token 扣减。
+            </div>
           </div>
           <button type="button" class="btn-fmodal-close" @click="showFuelModal = false">
             关闭面板 (Esc)
@@ -980,6 +1005,10 @@ const isLoadingBalance = ref(false);
 const balanceLastUpdated = ref('');
 const showFuelModal = ref(false);
 const isPrivacyMode = ref(false); // 投屏防窥脱敏模式
+const isHighPrecision = ref(false); // 毫厘微额精度模式 (保留4位小数展示微量Token扣减)
+const justRefreshed = ref(false); // 刚刚完成刷新的视觉反馈
+let balanceRefreshTimer = null;
+let justRefreshedTimer = null;
 
 const hasBalanceWarning = computed(() => {
   if (!modelsBalance.value?.models) return false;
@@ -1301,6 +1330,7 @@ async function handleStartDiagnostic() {
   } finally {
     isRunning.value = false;
     stopRadarTimer();
+    fetchModelsBalance(true);
   }
 }
 
@@ -1351,8 +1381,16 @@ function getModelIcon(provider) {
   return map[provider] || '🤖';
 }
 
-async function fetchModelsBalance() {
-  isLoadingBalance.value = true;
+function openFuelModal() {
+  showFuelModal.value = true;
+  // 打开算力池面板时，立刻主动发起向官方 6 大接口拉取最新实时账单
+  fetchModelsBalance(false, true);
+}
+
+async function fetchModelsBalance(silent = false, notifySuccess = false) {
+  if (!silent) {
+    isLoadingBalance.value = true;
+  }
   try {
     const res = await geoApi.getModelsBalance();
     if (res.data) {
@@ -1363,11 +1401,20 @@ async function fetchModelsBalance() {
       } else {
         balanceLastUpdated.value = new Date().toLocaleTimeString();
       }
+      if (notifySuccess) {
+        justRefreshed.value = true;
+        if (justRefreshedTimer) clearTimeout(justRefreshedTimer);
+        justRefreshedTimer = setTimeout(() => {
+          justRefreshed.value = false;
+        }, 3200);
+      }
     }
   } catch (err) {
     console.error('获取各大模型实时余额失败:', err);
   } finally {
-    isLoadingBalance.value = false;
+    if (!silent) {
+      isLoadingBalance.value = false;
+    }
   }
 }
 
@@ -1398,6 +1445,10 @@ onMounted(() => {
   loadAgencyInfo();
   loadHistory();
   fetchModelsBalance();
+  // 启动每 60 秒自动联机巡检后台心跳，静默同步官方最新账单
+  balanceRefreshTimer = setInterval(() => {
+    fetchModelsBalance(true);
+  }, 60000);
   loadCompanyArchives();
   if (route.query.brand || route.query.industry || route.query.company) {
     if (route.query.brand) form.value.brand_name = route.query.brand;
@@ -1419,6 +1470,14 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (balanceRefreshTimer) {
+    clearInterval(balanceRefreshTimer);
+    balanceRefreshTimer = null;
+  }
+  if (justRefreshedTimer) {
+    clearTimeout(justRefreshedTimer);
+    justRefreshedTimer = null;
+  }
   window.removeEventListener('keydown', onGlobalKeyDown);
   stopRadarTimer();
 });
@@ -2717,6 +2776,88 @@ onUnmounted(() => {
   background: rgba(245, 158, 11, 0.18);
   border-color: #f59e0b;
   color: #fbbf24;
+}
+
+.btn-precision-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: #1e293b;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-precision-toggle:hover {
+  border-color: #34d399;
+  color: #ffffff;
+}
+
+.btn-precision-toggle.active {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+  color: #34d399;
+}
+
+.precision-pill-badge {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.mini-precision-tag {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-weight: 600;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.badge-success-glow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 6px;
+  padding: 3px 8px;
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
+  50% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.45); }
+}
+
+.spin-anim {
+  animation: spinIcon 1s linear infinite;
+  display: inline-block;
+}
+
+.fmodal-tip-row {
+  margin-bottom: 0.35rem;
+}
+
+.fmodal-tip-row-sub {
+  color: #cbd5e1;
+  font-size: 0.74rem;
 }
 
 .fuel-modal-body {
