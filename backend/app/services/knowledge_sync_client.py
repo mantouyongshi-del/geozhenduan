@@ -134,7 +134,10 @@ class KnowledgeSyncClient:
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            kwargs: Dict[str, Any] = {"timeout": self._timeout}
+            kwargs: Dict[str, Any] = {
+                "timeout": self._timeout,
+                "trust_env": False,  # 内网直连，与 distribution_client 约定一致
+            }
             if self._transport is not None:
                 kwargs["transport"] = self._transport
             self._client = httpx.AsyncClient(**kwargs)
