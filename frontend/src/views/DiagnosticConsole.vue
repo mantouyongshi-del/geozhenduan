@@ -5,7 +5,7 @@
       <div class="header-inner">
         <div class="brand-badge">
           <!-- 舒展大气的品牌 Logo (无小气方框束缚) -->
-          <router-link to="/" class="brand-logo-free" title="蜉蝣小宝 · AI 营销智能大脑 (点击回到品牌官网)">
+          <router-link to="/" class="brand-logo-free" title="蜉蝣小宝 · 企业 AI 商业诊断工作台">
             <div class="logo-soft-aura"></div>
             <img src="/logo-white.png" alt="蜉蝣小宝" class="brand-logo-img" />
           </router-link>
@@ -31,9 +31,9 @@
             <span class="fuel-pill-num" v-else-if="isPrivacyMode">¥ •••</span>
             <span class="fuel-arrow">↗</span>
           </button>
-          <router-link to="/" class="nav-link nav-home-link">🏠 品牌官网</router-link>
+          <router-link to="/" class="nav-link active">🎯 准客户 AI 可见度体检</router-link>
           <router-link to="/ai_report" class="nav-link">📊 客户报表看板</router-link>
-          <router-link to="/diagnostic" class="nav-link active">🎯 准客户 AI 可见度体检</router-link>
+          <router-link to="/sales" class="nav-link">💼 销售实战演示台</router-link>
         </div>
       </div>
     </header>

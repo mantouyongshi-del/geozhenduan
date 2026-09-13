@@ -1,22 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>蜉蝣小宝 · 企业 GEO 优化专家</title>
+    <title>蜉蝣小宝 · 企业 AI 搜索引擎可见度 · 售前全网诊断工作台</title>
   </head>
   <body>
     <div id="app"></div>
     <script>
-      // 智能识别并平滑纠偏非 Hash 路由（防止用户或客户直接输入/粘贴直连 URL 时出现 404 或首页丢失参数）
+      // 智能识别并平滑纠偏非 Hash 路由
       (function() {
         var p = window.location.pathname;
         if (p && p !== '/' && p !== '/index.html') {
           var clean = p.replace(/^\//, '');
           if (clean === 'console' || clean === 'console.html') {
-            window.location.replace('/console.html' + (window.location.hash || '#/'));
-          } else if (clean.indexOf('diagnostic_report') === 0 || clean.indexOf('ai_report') === 0 || clean.indexOf('diagnostic') === 0) {
+            window.location.replace('/#/' + (window.location.search || ''));
+          } else if (clean.indexOf('diagnostic_report') === 0 || clean.indexOf('ai_report') === 0 || clean.indexOf('diagnostic') === 0 || clean.indexOf('sales') === 0) {
             window.location.replace('/#/' + clean + (window.location.search || ''));
           }
         }

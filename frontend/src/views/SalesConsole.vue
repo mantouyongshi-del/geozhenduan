@@ -438,11 +438,6 @@
 
           <!-- 右侧：顾问工作指引与实操说明 -->
           <div class="console-sidebar-col">
-            <!-- 顾问认证卡片 -->
-            <div class="console-card consultant-card">
-              </div>
-            </div>
-
             <!-- 售前促单战术要点 (折叠式) -->
             <div class="console-card tactics-card">
               <div class="tactics-header">

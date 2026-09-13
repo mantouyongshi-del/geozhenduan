@@ -1,29 +1,23 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-
-const HomeLanding = () => import('../views/HomeLanding.vue');
-const AiReport = () => import('../views/AiReport.vue');
-const DiagnosticReport = () => import('../views/DiagnosticReport.vue');
+import DiagnosticConsole from '../views/DiagnosticConsole.vue';
+import DiagnosticReport from '../views/DiagnosticReport.vue';
+import AiReport from '../views/AiReport.vue';
+import SalesConsole from '../views/SalesConsole.vue';
 
 const routes = [
   {
     path: '/',
-    name: 'HomeLanding',
-    component: HomeLanding,
-    meta: { title: '蜉蝣小宝 · GEO 新一代生成式 AI 搜索引擎商业认知与拓客中枢' }
-  },
-  {
-    path: '/console',
-    name: 'ConsoleRedirect',
-    beforeEnter() {
-      window.location.href = '/console.html';
-    }
+    name: 'DiagnosticConsole',
+    component: DiagnosticConsole,
+    meta: { title: '蜉蝣小宝 · 企业 AI 搜索引擎可见度 · 售前全网诊断工作台' }
   },
   {
     path: '/diagnostic',
-    name: 'DiagnosticRedirect',
-    beforeEnter() {
-      window.location.href = '/console.html';
-    }
+    redirect: '/'
+  },
+  {
+    path: '/console',
+    redirect: '/'
   },
   {
     path: '/ai_report',
@@ -42,6 +36,12 @@ const routes = [
     name: 'DiagnosticReportParam',
     component: DiagnosticReport,
     meta: { title: '蜉蝣小宝 · 企业 AI 搜索引擎可见度诊断体检书' }
+  },
+  {
+    path: '/sales',
+    name: 'SalesConsole',
+    component: SalesConsole,
+    meta: { title: '蜉蝣小宝 · 销售拓客与实战演示台' }
   }
 ];
 

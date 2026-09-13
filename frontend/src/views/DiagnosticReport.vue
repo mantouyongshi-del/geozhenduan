@@ -1600,14 +1600,10 @@ function isTargetCite(cite) {
 }
 
 function handleBackToConsole() {
-  if (window.location.pathname.includes('console.html') || window.location.pathname.includes('console')) {
-    if (router) {
-      router.push('/');
-    } else {
-      window.location.href = '/console.html#/';
-    }
+  if (router) {
+    router.push('/');
   } else {
-    window.location.href = '/console.html';
+    window.location.href = '/#/';
   }
 }
 
